@@ -14,69 +14,41 @@ struct ServerDetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            headerBar
-
+            settingsRow
             Divider()
-
-            // Main content
-            HSplitView {
-                configPanel
-                    .frame(minWidth: 240, maxWidth: 300)
-
-                logPanel
-                    .frame(minWidth: 400)
-            }
-
+            RequestLogView(processManager: pm)
             Divider()
-
-            // Status bar
             StatusBarView(processManager: pm)
+        }
+        .navigationTitle(config.name)
+        .navigationSubtitle("http://localhost:" + String(config.port) + "/generate")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                RunningBadge(
+                    isRunning: pm.isRunning,
+                    onStart: { appVM.startServer(serverID) },
+                    onStop: { appVM.stopServer(serverID) }
+                )
+            }
         }
     }
 
-    private var headerBar: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "server.rack")
-                .font(.title2)
-                .foregroundStyle(.secondary)
+    private var settingsRow: some View {
+        HStack(alignment: .top, spacing: 0) {
+            ConnectionSection(serverID: serverID)
+                .environmentObject(appVM)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(config.name)
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                Text("http://localhost:\(config.port)/generate")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-            }
+            Divider()
+                .padding(.vertical, 4)
 
-            Spacer()
-
-            RunningBadge(
-                isRunning: pm.isRunning,
-                onStart: { appVM.startServer(serverID) },
-                onStop: { appVM.stopServer(serverID) }
-            )
+            OptionsSection(serverID: serverID)
+                .environmentObject(appVM)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-    }
-
-    private var configPanel: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                ConnectionSection(serverID: serverID)
-                    .environmentObject(appVM)
-                OptionsSection(serverID: serverID)
-                    .environmentObject(appVM)
-            }
-            .padding(16)
-        }
         .background(Color(nsColor: .controlBackgroundColor))
     }
 
-    private var logPanel: some View {
-        RequestLogView(processManager: pm)
-    }
 }

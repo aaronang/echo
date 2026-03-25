@@ -9,7 +9,7 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .claude: return "Anthropic Claude"
+        case .claude: return "Claude"
         case .auggie: return "Auggie"
         case .droid: return "Droid"
         }

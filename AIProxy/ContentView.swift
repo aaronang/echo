@@ -7,7 +7,7 @@ struct ContentView: View {
         NavigationSplitView {
             SidebarView()
                 .environmentObject(appVM)
-                .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 260)
+                .navigationSplitViewColumnWidth(200)
         } detail: {
             if let selectedID = appVM.selectedServerID {
                 ServerDetailView(serverID: selectedID)
@@ -19,6 +19,6 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .navigationTitle("AI Proxy")
+        .navigationSplitViewStyle(.balanced)
     }
 }

@@ -21,11 +21,13 @@ struct RequestLogView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Filter bar
-            HStack {
+            HStack(spacing: 8) {
                 Text("Request Log")
                     .font(.headline)
+                    .lineLimit(1)
+                    .layoutPriority(-1)
 
-                Spacer()
+                Spacer(minLength: 4)
 
                 Picker("", selection: $filter) {
                     ForEach(LogFilter.allCases, id: \.self) { f in
@@ -33,7 +35,7 @@ struct RequestLogView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .frame(width: 180)
+                .fixedSize()
 
                 Button("Clear") {
                     processManager.clearLogs()
@@ -41,7 +43,7 @@ struct RequestLogView: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 8)
             .padding(.vertical, 8)
 
             Divider()

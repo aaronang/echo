@@ -8,10 +8,10 @@ struct AIProxyApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(appVM)
-                .frame(minWidth: 800, minHeight: 500)
+                .frame(minWidth: 500, minHeight: 350)
+                .navigationTitle("")
         }
-        .windowStyle(.titleBar)
-        .defaultSize(width: 1000, height: 620)
+        .defaultSize(width: 1000, height: 650)
 
         Settings {
             PreferencesView()
