@@ -1,0 +1,27 @@
+name: AIProxy
+options:
+  bundleIdPrefix: com.aiproxy
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  minimumXcodeGenVersion: "2.40"
+targets:
+  AIProxy:
+    type: application
+    platform: macOS
+    sources:
+      - AIProxy
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.aiproxy.app
+        PRODUCT_NAME: AI Proxy
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        INFOPLIST_KEY_LSUIElement: false
+        GENERATE_INFOPLIST_FILE: true
+        INFOPLIST_KEY_CFBundleDisplayName: "AI Proxy"
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_APP_SANDBOX: false
+        ENABLE_HARDENED_RUNTIME: true
