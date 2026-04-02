@@ -23,10 +23,10 @@ class ProcessManager: ObservableObject {
         return Date().timeIntervalSince(start)
     }
 
-    func start(port: Int, provider: Provider, systemPrompt: String) {
+    func start(port: Int, provider: Provider, systemPrompt: String, silent: Bool = false) {
         guard !isRunning else { return }
 
-        logInfo("Starting \(provider.displayName) server…")
+        if !silent { logInfo("Starting server…") }
         let port = availablePort(startingAt: port)
         let server = ProxyServer(port: port, provider: provider, systemPrompt: systemPrompt)
         server.onLog = { [weak self] entry in
@@ -87,7 +87,7 @@ class ProcessManager: ObservableObject {
         isRunning = false
         actualPort = 0
         startTime = nil
-        start(port: port, provider: provider, systemPrompt: systemPrompt)
+        start(port: port, provider: provider, systemPrompt: systemPrompt, silent: true)
     }
 
     func clearLogs() {
