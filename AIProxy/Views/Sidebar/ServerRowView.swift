@@ -47,7 +47,7 @@ struct ServerRowView: View {
             .foregroundStyle(
                 processManager.isRunning
                     ? Color(red: 38/255, green: 191/255, blue: 77/255)
-                    : Color(red: 217/255, green: 217/255, blue: 217/255)
+                    : Color(.sRGB, white: 0, opacity: 0.1)
             )
     }
 }
