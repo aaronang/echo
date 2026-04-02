@@ -18,8 +18,6 @@ private struct ServerDetailContent: View {
     let serverID: UUID
     @ObservedObject var pm: ProcessManager
 
-    @AppStorage("showInspector") private var showInspector = true
-
     private var config: ServerConfig {
         appVM.servers.first(where: { $0.id == serverID }) ?? ServerConfig()
     }
@@ -34,10 +32,6 @@ private struct ServerDetailContent: View {
         .toolbarBackground(.hidden, for: .windowToolbar)
         .onAppear { checkCli(config.provider) }
         .onChange(of: config.provider) { _, provider in checkCli(provider) }
-        .inspector(isPresented: $showInspector) {
-            InspectorView(serverID: serverID)
-                .environmentObject(appVM)
-        }
         .navigationTitle(Binding(
             get: { config.name },
             set: { newName in
@@ -81,14 +75,6 @@ private struct ServerDetailContent: View {
                 }
             }
 
-            ToolbarItemGroup(placement: .primaryAction) {
-                Button {
-                    showInspector.toggle()
-                } label: {
-                    Image(systemName: "sidebar.right")
-                }
-                .keyboardShortcut("i", modifiers: .command)
-            }
         }
     }
 
