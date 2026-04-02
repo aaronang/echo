@@ -22,6 +22,9 @@ struct SidebarView: View {
             )
             .tag(server.id)
             .contextMenu {
+                Button("Rename") {
+                    renamingID = server.id
+                }
                 Button("Copy API URL") {
                     let url = "http://localhost:\(server.port)"
                     NSPasteboard.general.clearContents()
@@ -34,6 +37,7 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
+        .environment(\.controlActiveState, .inactive)
         .navigationTitle("Servers")
         .toolbar(removing: .sidebarToggle)
         .toolbar {

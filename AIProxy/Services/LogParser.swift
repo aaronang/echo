@@ -2,7 +2,6 @@ import Foundation
 
 struct LogParser {
     // Parses lines like: [log] POST / 200 1204ms
-    // Also parses startup lines: ai-proxy [claude] running on http://localhost:3001
     static func parse(_ line: String) -> LogEntry? {
         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
@@ -39,20 +38,6 @@ struct LogParser {
     }
 
     private static func parseGenericLine(_ line: String) -> LogEntry? {
-        // Startup line
-        if line.contains("running on") {
-            return LogEntry(
-                timestamp: Date(),
-                method: "--",
-                path: line,
-                info: "",
-                statusCode: nil,
-                latency: nil,
-                isError: false,
-                rawLine: line
-            )
-        }
-
         // Error lines from stderr
         if line.hasPrefix("[") && line.contains("stderr") {
             return LogEntry(

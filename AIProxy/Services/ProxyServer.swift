@@ -156,6 +156,9 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
             rawLine: "→ \(preview)"
         ))
 
+        var responseText = ""
+        var thinkingText = ""
+
         let process = ProviderProcess()
         activeProcess = process
 
@@ -165,6 +168,11 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
             sessionID: body.session_id,
             systemPrompt: systemPrompt,
             onFrame: { [weak channel] frame in
+                switch frame {
+                case .text(let t): responseText += t
+                case .thinking(let t): thinkingText += t
+                default: break
+                }
                 guard let channel else { return }
                 let data = Self.sseString(for: frame)
                 channel.eventLoop.execute {
@@ -190,7 +198,31 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                 channel.eventLoop.execute {
                     channel.writeAndFlush(HTTPServerResponsePart.end(nil), promise: nil)
                     let ms = Int(Date().timeIntervalSince(startTime) * 1000)
-                    let entry = LogEntry(
+                    if !thinkingText.isEmpty {
+                        onLog?(LogEntry(
+                            timestamp: startTime,
+                            method: "POST",
+                            path: "/",
+                            info: "",
+                            statusCode: nil,
+                            latency: nil,
+                            isError: false,
+                            rawLine: "💭 \(thinkingText)"
+                        ))
+                    }
+                    if !responseText.isEmpty {
+                        onLog?(LogEntry(
+                            timestamp: startTime,
+                            method: "POST",
+                            path: "/",
+                            info: "",
+                            statusCode: nil,
+                            latency: nil,
+                            isError: false,
+                            rawLine: "← \(responseText)"
+                        ))
+                    }
+                    onLog?(LogEntry(
                         timestamp: startTime,
                         method: "POST",
                         path: "/",
@@ -200,8 +232,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                         isError: statusCode >= 400,
                         rawLine: "← \(statusCode) (\(ms)ms)",
                         requestBody: requestBodyJSON
-                    )
-                    onLog?(entry)
+                    ))
                 }
             }
         )

@@ -17,7 +17,7 @@ class AppViewModel: ObservableObject {
     init() {
         loadServers()
         if servers.isEmpty {
-            let defaultServer = ServerConfig(name: "New Server", port: 3000, provider: .auggie)
+            let defaultServer = ServerConfig(name: generateName(), port: 3000, provider: .auggie)
             servers.append(defaultServer)
             selectedServerID = defaultServer.id
             saveServers()
@@ -28,10 +28,21 @@ class AppViewModel: ObservableObject {
 
     func addServer() {
         let nextPort = (servers.map(\.port).max() ?? 2999) + 1
-        let server = ServerConfig(name: "New Server", port: nextPort, provider: .auggie)
+        let server = ServerConfig(name: generateName(), port: nextPort, provider: .auggie)
         servers.append(server)
         selectedServerID = server.id
         saveServers()
+    }
+
+    private func generateName() -> String {
+        let adjectives = ["Swift", "Agile", "Clever", "Bold", "Nimble", "Brave", "Wise", "Sharp", "Quick", "Calm", "Daring", "Steady"]
+        let animals = ["Fox", "Falcon", "Otter", "Lynx", "Panda", "Eagle", "Owl", "Wolf", "Hawk", "Crane", "Raven", "Ibis", "Finch", "Bear"]
+        let existing = Set(servers.map(\.name))
+        for _ in 0..<20 {
+            let name = "\(adjectives.randomElement()!) \(animals.randomElement()!)"
+            if !existing.contains(name) { return name }
+        }
+        return "\(adjectives.randomElement()!) \(animals.randomElement()!)"
     }
 
     func deleteServer(_ id: UUID) {

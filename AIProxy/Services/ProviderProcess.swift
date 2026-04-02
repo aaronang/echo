@@ -197,26 +197,62 @@ final class ProviderProcess {
 
     // MARK: - Helpers
 
+    private static let baseSystemPrompt = """
+    You are a helpful AI assistant. The user may ask you anything — do not assume this is a coding or software engineering task unless they explicitly say so. Respond naturally and helpfully to whatever the user asks. You do not have access to a file system and should not attempt to read, write, or reference local files. You are able to search the web to find up-to-date information when needed.
+    """
+
     private func makeProcess(command: String, args: [String], systemPrompt: String) -> Process {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: resolveCommand(command))
         p.arguments = args
         var env = ProcessInfo.processInfo.environment
-        env["PATH"] = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
-        if !systemPrompt.isEmpty {
-            env["SYSTEM_PROMPT"] = systemPrompt
-        }
+        env["PATH"] = Self.resolvedPATH
+        let combined = systemPrompt.isEmpty
+            ? Self.baseSystemPrompt
+            : Self.baseSystemPrompt + "\n\n" + systemPrompt
+        env["SYSTEM_PROMPT"] = combined
         p.environment = env
         return p
     }
 
+    static func isAvailable(_ provider: Provider) -> Bool {
+        let command = provider.rawValue
+        return candidatePaths(for: command).contains { FileManager.default.fileExists(atPath: $0) }
+    }
+
     private func resolveCommand(_ command: String) -> String {
-        let candidates = [
+        Self.candidatePaths(for: command).first { FileManager.default.fileExists(atPath: $0) }
+            ?? "/opt/homebrew/bin/\(command)"
+    }
+
+    private static func candidatePaths(for command: String) -> [String] {
+        let home = ProcessInfo.processInfo.environment["HOME"] ?? ""
+        var paths = [
+            "\(home)/.local/bin/\(command)",
             "/opt/homebrew/bin/\(command)",
             "/usr/local/bin/\(command)",
             "/usr/bin/\(command)",
         ]
-        return candidates.first { FileManager.default.fileExists(atPath: $0) } ?? "/opt/homebrew/bin/\(command)"
+        for binDir in nvmBinDirs {
+            paths.insert("\(binDir)/\(command)", at: 0)
+        }
+        return paths
+    }
+
+    private static var resolvedPATH: String {
+        let home = ProcessInfo.processInfo.environment["HOME"] ?? ""
+        var parts = ["\(home)/.local/bin", "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin"]
+        for binDir in nvmBinDirs.reversed() {
+            parts.insert(binDir, at: 0)
+        }
+        return parts.joined(separator: ":")
+    }
+
+    private static var nvmBinDirs: [String] {
+        let home = ProcessInfo.processInfo.environment["HOME"] ?? ""
+        let nvmNodeDir = "\(home)/.nvm/versions/node"
+        let versions = (try? FileManager.default.contentsOfDirectory(atPath: nvmNodeDir)) ?? []
+        return versions.sorted().reversed().map { "\(nvmNodeDir)/\($0)/bin" }
     }
 
     private func buildAuggieArgs(prompt: String, sessionID: String?) -> [String] {

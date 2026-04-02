@@ -52,39 +52,16 @@ struct InspectorView: View {
             ))
             .font(.system(.body, design: .monospaced))
             .scrollContentBackground(.hidden)
+            .padding(6)
+            .background(Color(nsColor: .textBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+            )
             .padding(.horizontal, 12)
+            .padding(.bottom, 12)
 
-            Divider()
-                .padding(.top, 8)
-
-            // Options
-            VStack(alignment: .leading, spacing: 12) {
-                Text("OPTIONS")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.secondary)
-
-                Toggle(isOn: binding(\.requestLogging)) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Request Logging")
-                        Text("Log all incoming API requests")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .toggleStyle(.switch)
-
-                Toggle(isOn: binding(\.streamPassthrough)) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Stream Passthrough")
-                        Text("Forward SSE streaming responses")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .toggleStyle(.switch)
-            }
-            .padding(16)
         }
         .frame(minWidth: 240)
     }
