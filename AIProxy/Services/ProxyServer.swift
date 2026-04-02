@@ -109,6 +109,11 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
             return
         }
 
+        if head.method == .GET && head.uri == "/help" {
+            writeHelp(context: context, version: head.version)
+            return
+        }
+
         guard head.method == .POST else {
             writeError(context: context, status: .notFound, message: "Not found")
             return
@@ -254,6 +259,28 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
         let json = (try? JSONSerialization.data(withJSONObject: dict))
             .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
         return "data: \(json)\n\n"
+    }
+
+    // MARK: - Help
+
+    private func writeHelp(context: ChannelHandlerContext, version: HTTPVersion) {
+        let body: String
+        if let url = Bundle.main.url(forResource: "help", withExtension: "md"),
+           let content = try? String(contentsOf: url, encoding: .utf8) {
+            body = content
+        } else {
+            body = "Help file not found."
+        }
+        var headers = HTTPHeaders()
+        headers.add(name: "Content-Type", value: "text/plain; charset=utf-8")
+        headers.add(name: "Access-Control-Allow-Origin", value: "*")
+        headers.add(name: "Content-Length", value: "\(body.utf8.count)")
+        let head = HTTPResponseHead(version: version, status: .ok, headers: headers)
+        context.write(wrapOutboundOut(.head(head)), promise: nil)
+        var buf = context.channel.allocator.buffer(capacity: body.utf8.count)
+        buf.writeString(body)
+        context.write(wrapOutboundOut(.body(.byteBuffer(buf))), promise: nil)
+        context.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)
     }
 
     // MARK: - Error / Preflight Responses
