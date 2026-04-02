@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct AIProxyApp: App {
+struct EchoApp: App {
     @StateObject private var appVM = AppViewModel()
 
     var body: some Scene {

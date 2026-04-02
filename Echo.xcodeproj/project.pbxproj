@@ -16,7 +16,7 @@
 		61F6E4D93D82D96944C99A2B /* ProxyServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01DA808ADDE553C11A3C7083 /* ProxyServer.swift */; };
 		654583C31A8D92A4694196F5 /* NIOHTTP1 in Frameworks */ = {isa = PBXBuildFile; productRef = AE3861C3327EFB688972A7C4 /* NIOHTTP1 */; };
 		7292D293F7B2C7FCA6A98353 /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8EEE9A82C10D1DB2B31FC52 /* PreferencesView.swift */; };
-		7BFC61664BBC29644C8DDA68 /* AIProxyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7827EC7280BF60FAC8B77C9 /* AIProxyApp.swift */; };
+		7BFC61664BBC29644C8DDA68 /* EchoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7827EC7280BF60FAC8B77C9 /* EchoApp.swift */; };
 		7FDFDAF41ED8945729F5E1E4 /* OptionsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55517C8A39C6CDF35123D5C5 /* OptionsSection.swift */; };
 		83F2A63D9A979717FEB0E727 /* SystemPromptTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C764C2AAF8F629728A37C21C /* SystemPromptTemplate.swift */; };
 		93040CA388A34B661DA68BBB /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 447E82598216DAB326CA728F /* SidebarView.swift */; };
@@ -51,9 +51,9 @@
 		CFE70A85AA4EF80CFDC8F2A6 /* ServerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerDetailView.swift; sourceTree = "<group>"; };
 		DF61218B9BBD4071C7C55C87 /* LogParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogParser.swift; sourceTree = "<group>"; };
 		E8815FE7623EEB0B3CE80FBE /* ServerRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerRowView.swift; sourceTree = "<group>"; };
-		F7827EC7280BF60FAC8B77C9 /* AIProxyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIProxyApp.swift; sourceTree = "<group>"; };
+		F7827EC7280BF60FAC8B77C9 /* EchoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EchoApp.swift; sourceTree = "<group>"; };
 		FDB8C96F08B942725E4B6471 /* ProcessManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessManager.swift; sourceTree = "<group>"; };
-		FE5F9BF1B626ADFBBCE1B811 /* AIProxy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AIProxy.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FE5F9BF1B626ADFBBCE1B811 /* Echo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Echo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,7 +73,7 @@
 		1398AC83A95E9DC1DBB60FE7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				FE5F9BF1B626ADFBBCE1B811 /* AIProxy.app */,
+				FE5F9BF1B626ADFBBCE1B811 /* Echo.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -119,7 +119,7 @@
 		B945EFE5403E65CDB110758C = {
 			isa = PBXGroup;
 			children = (
-				F5DEF021624056C2E3339D6C /* AIProxy */,
+				F5DEF021624056C2E3339D6C /* Echo */,
 				1398AC83A95E9DC1DBB60FE7 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -154,11 +154,11 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
-		F5DEF021624056C2E3339D6C /* AIProxy */ = {
+		F5DEF021624056C2E3339D6C /* Echo */ = {
 			isa = PBXGroup;
 			children = (
 				1A2B3C4D5E6F7A8B9C0D1E30 /* help.md */,
-				F7827EC7280BF60FAC8B77C9 /* AIProxyApp.swift */,
+				F7827EC7280BF60FAC8B77C9 /* EchoApp.swift */,
 				845F0F4B63E51A427EFBB715 /* ContentView.swift */,
 				B8EEE9A82C10D1DB2B31FC52 /* PreferencesView.swift */,
 				BE5C94FBCBF0FA5C40DA8203 /* Models */,
@@ -166,15 +166,15 @@
 				944E8CFAF44932FAA29A9383 /* ViewModels */,
 				989AAFA9E7EB0E69514787ED /* Views */,
 			);
-			path = AIProxy;
+			path = Echo;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		8B31349CBE0758C34F563383 /* AIProxy */ = {
+		8B31349CBE0758C34F563383 /* Echo */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 885CFCC95DEFD511FC19C589 /* Build configuration list for PBXNativeTarget "AIProxy" */;
+			buildConfigurationList = 885CFCC95DEFD511FC19C589 /* Build configuration list for PBXNativeTarget "Echo" */;
 			buildPhases = (
 				6C9C4FD4DB63EFE49F55E394 /* Sources */,
 				078A598D0C4235642EB00FC7 /* Frameworks */,
@@ -184,14 +184,14 @@
 			);
 			dependencies = (
 			);
-			name = AIProxy;
+			name = Echo;
 			packageProductDependencies = (
 				588525BE9B47E24B756B3FA7 /* NIOCore */,
 				0B186816C1FA606C73DA04D6 /* NIOPosix */,
 				AE3861C3327EFB688972A7C4 /* NIOHTTP1 */,
 			);
-			productName = AIProxy;
-			productReference = FE5F9BF1B626ADFBBCE1B811 /* AIProxy.app */;
+			productName = Echo;
+			productReference = FE5F9BF1B626ADFBBCE1B811 /* Echo.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -208,7 +208,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 7BB17E70BB492D6ADF8C7956 /* Build configuration list for PBXProject "AIProxy" */;
+			buildConfigurationList = 7BB17E70BB492D6ADF8C7956 /* Build configuration list for PBXProject "Echo" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -225,7 +225,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				8B31349CBE0758C34F563383 /* AIProxy */,
+				8B31349CBE0758C34F563383 /* Echo */,
 			);
 		};
 /* End PBXProject section */
@@ -246,7 +246,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7BFC61664BBC29644C8DDA68 /* AIProxyApp.swift in Sources */,
+				7BFC61664BBC29644C8DDA68 /* EchoApp.swift in Sources */,
 				358B2E22F1D39356CB6513F4 /* AppViewModel.swift in Sources */,
 				C8BC49311A0D9842E076618F /* ConnectionSection.swift in Sources */,
 				405012F0E5F6CC22E3144B33 /* ContentView.swift in Sources */,
@@ -281,7 +281,7 @@
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "AI Proxy";
+				INFOPLIST_KEY_CFBundleDisplayName = "Echo";
 				INFOPLIST_KEY_LSUIElement = NO;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -289,8 +289,8 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.aiproxy.app;
-				PRODUCT_NAME = "AI Proxy";
+				PRODUCT_BUNDLE_IDENTIFIER = com.echo.app;
+				PRODUCT_NAME = "Echo";
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.9;
 			};
@@ -369,7 +369,7 @@
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "AI Proxy";
+				INFOPLIST_KEY_CFBundleDisplayName = "Echo";
 				INFOPLIST_KEY_LSUIElement = NO;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -377,8 +377,8 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.aiproxy.app;
-				PRODUCT_NAME = "AI Proxy";
+				PRODUCT_BUNDLE_IDENTIFIER = com.echo.app;
+				PRODUCT_NAME = "Echo";
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.9;
 			};
@@ -443,7 +443,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		7BB17E70BB492D6ADF8C7956 /* Build configuration list for PBXProject "AIProxy" */ = {
+		7BB17E70BB492D6ADF8C7956 /* Build configuration list for PBXProject "Echo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B3A87AEC9598DC5529E853D2 /* Debug */,
@@ -452,7 +452,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		885CFCC95DEFD511FC19C589 /* Build configuration list for PBXNativeTarget "AIProxy" */ = {
+		885CFCC95DEFD511FC19C589 /* Build configuration list for PBXNativeTarget "Echo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				6B35DF53B9948D921D1C001D /* Debug */,

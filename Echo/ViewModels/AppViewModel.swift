@@ -9,7 +9,7 @@ class AppViewModel: ObservableObject {
 
     private var configURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = appSupport.appendingPathComponent("AIProxy", isDirectory: true)
+        let dir = appSupport.appendingPathComponent("Echo", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("servers.json")
     }

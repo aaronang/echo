@@ -1,6 +1,6 @@
-name: AIProxy
+name: Echo
 options:
-  bundleIdPrefix: com.aiproxy
+  bundleIdPrefix: com.echo
   deploymentTarget:
     macOS: "14.0"
   xcodeVersion: "16.0"
@@ -10,11 +10,11 @@ packages:
     url: https://github.com/apple/swift-nio
     from: "2.65.0"
 targets:
-  AIProxy:
+  Echo:
     type: application
     platform: macOS
     sources:
-      - AIProxy
+      - Echo
     dependencies:
       - package: SwiftNIO
         product: NIOCore
@@ -24,15 +24,15 @@ targets:
         product: NIOHTTP1
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.aiproxy.app
-        PRODUCT_NAME: AI Proxy
+        PRODUCT_BUNDLE_IDENTIFIER: com.echo.app
+        PRODUCT_NAME: Echo
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.9"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         INFOPLIST_KEY_LSUIElement: false
         GENERATE_INFOPLIST_FILE: true
-        INFOPLIST_KEY_CFBundleDisplayName: "AI Proxy"
+        INFOPLIST_KEY_CFBundleDisplayName: "Echo"
         CODE_SIGN_STYLE: Automatic
         ENABLE_APP_SANDBOX: false
         ENABLE_HARDENED_RUNTIME: true
