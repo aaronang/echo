@@ -26,6 +26,7 @@ class ProcessManager: ObservableObject {
     func start(port: Int, provider: Provider, systemPrompt: String) {
         guard !isRunning else { return }
 
+        logInfo("Starting \(provider.displayName) server…")
         let port = availablePort(startingAt: port)
         let server = ProxyServer(port: port, provider: provider, systemPrompt: systemPrompt)
         server.onLog = { [weak self] entry in
@@ -44,7 +45,7 @@ class ProcessManager: ObservableObject {
                 self.requestCount = 0
                 self.errorCount = 0
                 self.totalLatencyMs = 0
-                self.logs = [LogEntry(
+                self.appendLog(LogEntry(
                     timestamp: Date(),
                     method: "SYS",
                     path: "Listening on http://localhost:\(port)",
@@ -53,7 +54,7 @@ class ProcessManager: ObservableObject {
                     latency: nil,
                     isError: false,
                     rawLine: "Listening on http://localhost:\(port)"
-                )]
+                ))
             } catch {
                 self.appendLog(LogEntry(
                     timestamp: Date(),
@@ -71,6 +72,7 @@ class ProcessManager: ObservableObject {
     }
 
     func stop() {
+        logInfo("Server stopped")
         server?.stop()
         server = nil
         isRunning = false
@@ -79,7 +81,12 @@ class ProcessManager: ObservableObject {
     }
 
     func restart(port: Int, provider: Provider, systemPrompt: String) {
-        stop()
+        logInfo("Restarting server…")
+        server?.stop()
+        server = nil
+        isRunning = false
+        actualPort = 0
+        startTime = nil
         start(port: port, provider: provider, systemPrompt: systemPrompt)
     }
 
