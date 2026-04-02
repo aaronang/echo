@@ -1,8 +1,8 @@
 build/
 DerivedData/
-*.xcuserdata
-**/*.xcuserdata
+xcuserdata/
 *.xcworkspace
 .DS_Store
 .swiftpm/
 *.app/
+.claude/
