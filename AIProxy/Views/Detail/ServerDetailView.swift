@@ -31,6 +31,7 @@ private struct ServerDetailContent: View {
             Divider()
             StatusBarView(processManager: pm)
         }
+        .toolbarBackground(.hidden, for: .windowToolbar)
         .onAppear { checkCli(config.provider) }
         .onChange(of: config.provider) { _, provider in checkCli(provider) }
         .inspector(isPresented: $showInspector) {
