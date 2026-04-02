@@ -30,16 +30,6 @@ struct InspectorView: View {
                 .foregroundStyle(.secondary)
                 .help("Copy Prompt")
 
-                Menu("Templates") {
-                    ForEach(SystemPromptTemplate.all) { template in
-                        Button(template.name) {
-                            update(\.systemPrompt, to: template.content)
-                        }
-                    }
-                }
-                .menuStyle(.borderlessButton)
-                .font(.caption)
-                .fixedSize()
             }
             .padding(.horizontal, 16)
             .padding(.top, 16)
