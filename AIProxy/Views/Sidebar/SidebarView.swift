@@ -37,7 +37,6 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
-        .environment(\.controlActiveState, .inactive)
         .navigationTitle("Servers")
         .toolbar(removing: .sidebarToggle)
         .toolbar {
