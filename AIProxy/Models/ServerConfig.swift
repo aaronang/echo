@@ -39,16 +39,16 @@ struct ServerConfig: Codable, Identifiable {
     var provider: Provider
     var requestLogging: Bool
     var streamPassthrough: Bool
-    var autoStart: Bool
+    var systemPrompt: String
 
     init(
         id: UUID = UUID(),
         name: String = "New Server",
         port: Int = 3000,
-        provider: Provider = .claude,
+        provider: Provider = .auggie,
         requestLogging: Bool = true,
         streamPassthrough: Bool = true,
-        autoStart: Bool = false
+        systemPrompt: String = ""
     ) {
         self.id = id
         self.name = name
@@ -56,6 +56,6 @@ struct ServerConfig: Codable, Identifiable {
         self.provider = provider
         self.requestLogging = requestLogging
         self.streamPassthrough = streamPassthrough
-        self.autoStart = autoStart
+        self.systemPrompt = systemPrompt
     }
 }

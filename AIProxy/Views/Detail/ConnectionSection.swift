@@ -16,15 +16,6 @@ struct ConnectionSection: View {
                 .foregroundStyle(.secondary)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Port")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                TextField("Port", text: portBinding)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 120)
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
                 Text("Provider")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -35,18 +26,8 @@ struct ConnectionSection: View {
                 }
                 .labelsHidden()
             }
-        }
-    }
 
-    private var portBinding: Binding<String> {
-        Binding(
-            get: { String(config.port) },
-            set: { newValue in
-                var updated = config
-                updated.port = Int(newValue) ?? config.port
-                appVM.updateServer(updated)
-            }
-        )
+        }
     }
 
     private func binding<T>(_ keyPath: WritableKeyPath<ServerConfig, T>) -> Binding<T> {

@@ -10,15 +10,28 @@ struct LogEntry: Identifiable {
     let latency: String?
     let isError: Bool
     let rawLine: String
+    let requestBody: String?
 
-    var statusColor: String {
-        guard let code = statusCode else { return "secondary" }
-        switch code {
-        case 200..<300: return "green"
-        case 400..<500: return "orange"
-        case 500..<600: return "red"
-        default: return "secondary"
-        }
+    init(
+        timestamp: Date,
+        method: String,
+        path: String,
+        info: String,
+        statusCode: Int?,
+        latency: String?,
+        isError: Bool,
+        rawLine: String,
+        requestBody: String? = nil
+    ) {
+        self.timestamp = timestamp
+        self.method = method
+        self.path = path
+        self.info = info
+        self.statusCode = statusCode
+        self.latency = latency
+        self.isError = isError
+        self.rawLine = rawLine
+        self.requestBody = requestBody
     }
 
     var is2xx: Bool {
@@ -33,7 +46,7 @@ struct LogEntry: Identifiable {
 
     var formattedTime: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss"
+        formatter.dateFormat = "h:mm:ss a"
         return formatter.string(from: timestamp)
     }
 }

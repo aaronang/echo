@@ -5,12 +5,23 @@ options:
     macOS: "14.0"
   xcodeVersion: "16.0"
   minimumXcodeGenVersion: "2.40"
+packages:
+  SwiftNIO:
+    url: https://github.com/apple/swift-nio
+    from: "2.65.0"
 targets:
   AIProxy:
     type: application
     platform: macOS
     sources:
       - AIProxy
+    dependencies:
+      - package: SwiftNIO
+        product: NIOCore
+      - package: SwiftNIO
+        product: NIOPosix
+      - package: SwiftNIO
+        product: NIOHTTP1
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.aiproxy.app

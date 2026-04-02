@@ -7,7 +7,7 @@ struct ContentView: View {
         NavigationSplitView {
             SidebarView()
                 .environmentObject(appVM)
-                .navigationSplitViewColumnWidth(200)
+                .navigationSplitViewColumnWidth(min: 240, ideal: 240, max: 240)
         } detail: {
             if let selectedID = appVM.selectedServerID {
                 ServerDetailView(serverID: selectedID)

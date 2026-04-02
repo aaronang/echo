@@ -2,65 +2,28 @@ import SwiftUI
 
 struct StatusBarView: View {
     @ObservedObject var processManager: ProcessManager
-    @State private var currentTime = Date()
 
-    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    private let labelColor = Color(nsColor: NSColor(red: 0.447, green: 0.447, blue: 0.447, alpha: 1))
+    private let valueColor = Color(nsColor: NSColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1))
 
     var body: some View {
-        HStack(spacing: 20) {
-            statItem("Requests", value: "\(processManager.requestCount)")
-            statItem("Errors", value: "\(processManager.errorCount)", color: processManager.errorCount > 0 ? .red : nil)
-
-            Divider()
-                .frame(height: 14)
-
-            statItem("Avg latency", value: processManager.requestCount > 0 ?
-                     String(format: "%.0fms", processManager.averageLatency) : "--")
-
-            Spacer()
-
-            if processManager.isRunning {
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(.green)
-                        .frame(width: 6, height: 6)
-                    Text("uptime \(formattedUptime)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
+        HStack(spacing: 16) {
+            stat("Requests", count: processManager.requestCount)
+            stat("Errors", count: processManager.errorCount, isError: true)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 6)
-        .background(Color(nsColor: .windowBackgroundColor))
-        .onReceive(timer) { _ in
-            currentTime = Date()
-        }
+        .frame(height: 24)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func statItem(_ label: String, value: String, color: Color? = nil) -> some View {
+    private func stat(_ label: String, count: Int, isError: Bool = false) -> some View {
         HStack(spacing: 4) {
             Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundStyle(color ?? .primary)
-        }
-    }
-
-    private var formattedUptime: String {
-        guard let start = processManager.startTime else { return "0s" }
-        let interval = currentTime.timeIntervalSince(start)
-        let hours = Int(interval) / 3600
-        let minutes = (Int(interval) % 3600) / 60
-        if hours > 0 {
-            return "\(hours)h \(minutes)m"
-        } else if minutes > 0 {
-            return "\(minutes)m"
-        } else {
-            return "\(Int(interval))s"
+                .font(.system(size: 11))
+                .foregroundStyle(labelColor)
+            Text("\(count)")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(isError && count > 0 ? .red : valueColor)
         }
     }
 }

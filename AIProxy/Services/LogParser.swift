@@ -1,7 +1,7 @@
 import Foundation
 
 struct LogParser {
-    // Parses lines like: [log] POST /generate 200 1204ms
+    // Parses lines like: [log] POST / 200 1204ms
     // Also parses startup lines: ai-proxy [claude] running on http://localhost:3001
     static func parse(_ line: String) -> LogEntry? {
         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -72,7 +72,7 @@ struct LogParser {
             return LogEntry(
                 timestamp: Date(),
                 method: "POST",
-                path: "/generate",
+                path: "/",
                 info: String(line.dropFirst("[request]".count)).trimmingCharacters(in: .whitespaces),
                 statusCode: nil,
                 latency: nil,

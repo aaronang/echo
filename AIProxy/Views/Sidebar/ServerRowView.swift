@@ -3,44 +3,51 @@ import SwiftUI
 struct ServerRowView: View {
     let config: ServerConfig
     let isRunning: Bool
+    let isRenaming: Bool
+    let onCommit: (String) -> Void
+    let onCancel: () -> Void
+
+    @State private var editText: String = ""
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         HStack(spacing: 8) {
-            if isRunning {
-                Circle()
-                    .fill(.green)
-                    .frame(width: 6, height: 6)
-            }
+            statusIcon
 
-            VStack(alignment: .leading, spacing: 2) {
+            if isRenaming {
+                TextField("", text: $editText)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 11, weight: .medium))
+                    .focused($isFocused)
+                    .onSubmit {
+                        let trimmed = editText.trimmingCharacters(in: .whitespaces)
+                        onCommit(trimmed.isEmpty ? config.name : trimmed)
+                    }
+                    .onKeyPress(.escape) {
+                        onCancel()
+                        return .handled
+                    }
+                    .onAppear {
+                        editText = config.name
+                        isFocused = true
+                    }
+            } else {
                 Text(config.name)
-                    .fontWeight(.medium)
+                    .font(.system(size: 11, weight: .medium))
                     .lineLimit(1)
-                Text(":\(config.port)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
-
-            Spacer()
-
-            Text(config.provider.badge)
-                .font(.caption2)
-                .fontWeight(.bold)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(badgeColor.opacity(0.15))
-                .foregroundStyle(badgeColor)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
         }
         .padding(.vertical, 2)
     }
 
-    private var badgeColor: Color {
-        switch config.provider.badgeColor {
-        case "orange": return .orange
-        case "blue": return .blue
-        case "green": return .green
-        default: return .secondary
-        }
+    private var statusIcon: some View {
+        Image(systemName: "circle.fill")
+            .font(.system(size: 11))
+            .frame(width: 16, height: 18)
+            .foregroundStyle(
+                isRunning
+                    ? Color(red: 38/255, green: 191/255, blue: 77/255)
+                    : Color(red: 217/255, green: 217/255, blue: 217/255)
+            )
     }
 }

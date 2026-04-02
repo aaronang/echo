@@ -1,137 +1,58 @@
 import SwiftUI
 
-enum LogFilter: String, CaseIterable {
-    case all = "All"
-    case success = "2xx"
-    case errors = "Errors"
-}
-
 struct RequestLogView: View {
     @ObservedObject var processManager: ProcessManager
-    @State private var filter: LogFilter = .all
-
-    private var filteredLogs: [LogEntry] {
-        switch filter {
-        case .all: return processManager.logs
-        case .success: return processManager.logs.filter { $0.is2xx }
-        case .errors: return processManager.logs.filter { $0.isErrorStatus }
-        }
-    }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Filter bar
-            HStack(spacing: 8) {
-                Text("Request Log")
-                    .font(.headline)
-                    .lineLimit(1)
-                    .layoutPriority(-1)
-
-                Spacer(minLength: 4)
-
-                Picker("", selection: $filter) {
-                    ForEach(LogFilter.allCases, id: \.self) { f in
-                        Text(f.rawValue).tag(f)
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(processManager.logs) { entry in
+                        TerminalEntryView(entry: entry)
+                            .id(entry.id)
                     }
                 }
-                .pickerStyle(.segmented)
-                .fixedSize()
-
-                Button("Clear") {
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .textSelection(.enabled)
+            .onChange(of: processManager.logs.count) {
+                if let last = processManager.logs.last {
+                    proxy.scrollTo(last.id, anchor: .bottom)
+                }
+            }
+        }
+        .background {
+            Group {
+                Button("") {
                     processManager.clearLogs()
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 8)
+                .keyboardShortcut("k", modifiers: .command)
 
-            Divider()
-
-            // Log table
-            if filteredLogs.isEmpty {
-                Spacer()
-                Text("No log entries")
-                    .foregroundStyle(.tertiary)
-                Spacer()
-            } else {
-                ScrollViewReader { proxy in
-                    List(filteredLogs) { entry in
-                        LogRowView(entry: entry)
-                            .id(entry.id)
-                            .listRowSeparator(.visible)
-                    }
-                    .listStyle(.plain)
-                    .font(.system(.caption, design: .monospaced))
-                    .onChange(of: processManager.logs.count) {
-                        if let last = filteredLogs.last {
-                            proxy.scrollTo(last.id, anchor: .bottom)
-                        }
-                    }
+                Button("") {
+                    guard let body = processManager.logs.last?.requestBody else { return }
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(body, forType: .string)
                 }
+                .keyboardShortcut("c", modifiers: [.command, .shift])
             }
+            .frame(width: 0, height: 0)
+            .opacity(0)
         }
     }
 }
 
-struct LogRowView: View {
+struct TerminalEntryView: View {
     let entry: LogEntry
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             Text(entry.formattedTime)
-                .foregroundStyle(.secondary)
-                .frame(width: 65, alignment: .leading)
-
-            Text(entry.method)
-                .fontWeight(.semibold)
-                .foregroundStyle(methodColor)
-                .frame(width: 36, alignment: .leading)
-
-            Text(entry.path)
-                .lineLimit(1)
-                .truncationMode(.middle)
-
-            if !entry.info.isEmpty {
-                Text(entry.info)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-
-            Spacer()
-
-            if let code = entry.statusCode {
-                Text("\(code)")
-                    .fontWeight(.medium)
-                    .foregroundStyle(statusColor)
-                    .frame(width: 32, alignment: .trailing)
-            }
-
-            if let latency = entry.latency {
-                Text(latency)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 60, alignment: .trailing)
-            }
-        }
-        .padding(.vertical, 1)
-    }
-
-    private var methodColor: Color {
-        switch entry.method {
-        case "POST": return .blue
-        case "GET": return .green
-        case "ERR": return .red
-        default: return .secondary
-        }
-    }
-
-    private var statusColor: Color {
-        guard let code = entry.statusCode else { return .secondary }
-        switch code {
-        case 200..<300: return .green
-        case 400..<500: return .orange
-        case 500..<600: return .red
-        default: return .secondary
+                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                .foregroundStyle(Color(nsColor: NSColor(red: 0.447, green: 0.447, blue: 0.447, alpha: 1)))
+            Text(entry.rawLine.isEmpty ? entry.path : entry.rawLine)
+                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                .foregroundStyle(entry.isError ? Color.red : Color(nsColor: NSColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1)))
         }
     }
 }

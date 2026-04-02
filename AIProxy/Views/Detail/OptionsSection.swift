@@ -36,17 +36,6 @@ struct OptionsSection: View {
                 }
             }
             .toggleStyle(.switch)
-
-            Toggle(isOn: binding(\.autoStart)) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Auto-start on Launch")
-                        .font(.body)
-                    Text("Start this server at login")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .toggleStyle(.switch)
         }
     }
 

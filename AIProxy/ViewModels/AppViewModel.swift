@@ -6,7 +6,6 @@ class AppViewModel: ObservableObject {
     @Published var servers: [ServerConfig] = []
     @Published var selectedServerID: UUID?
     @Published var serverProcesses: [UUID: ProcessManager] = [:]
-    @AppStorage("aiProxyPath") var aiProxyPath: String = ""
 
     private var configURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -18,7 +17,7 @@ class AppViewModel: ObservableObject {
     init() {
         loadServers()
         if servers.isEmpty {
-            let defaultServer = ServerConfig(name: "Claude Proxy", port: 3000, provider: .claude)
+            let defaultServer = ServerConfig(name: "New Server", port: 3000, provider: .auggie)
             servers.append(defaultServer)
             selectedServerID = defaultServer.id
             saveServers()
@@ -29,7 +28,7 @@ class AppViewModel: ObservableObject {
 
     func addServer() {
         let nextPort = (servers.map(\.port).max() ?? 2999) + 1
-        let server = ServerConfig(name: "New Server", port: nextPort, provider: .claude)
+        let server = ServerConfig(name: "New Server", port: nextPort, provider: .auggie)
         servers.append(server)
         selectedServerID = server.id
         saveServers()
@@ -61,28 +60,22 @@ class AppViewModel: ObservableObject {
 
     func startServer(_ id: UUID) {
         guard let config = servers.first(where: { $0.id == id }) else { return }
-        let path = aiProxyPath.isEmpty ? detectAIProxyPath() : aiProxyPath
-        processManager(for: id).start(aiProxyPath: path, provider: config.provider, port: config.port)
+        processManager(for: id).start(port: config.port, provider: config.provider, systemPrompt: config.systemPrompt)
     }
 
     func stopServer(_ id: UUID) {
         processManager(for: id).stop()
     }
 
-    private func detectAIProxyPath() -> String {
-        let candidates = [
-            NSHomeDirectory() + "/Code/ai-proxy",
-            NSHomeDirectory() + "/code/ai-proxy",
-            NSHomeDirectory() + "/Projects/ai-proxy",
-            NSHomeDirectory() + "/Developer/ai-proxy",
-        ]
-        for path in candidates {
-            if FileManager.default.fileExists(atPath: path + "/index.mjs") {
-                aiProxyPath = path
-                return path
-            }
+    func stopAllServers() {
+        for pm in serverProcesses.values {
+            pm.stop()
         }
-        return NSHomeDirectory() + "/Code/ai-proxy"
+    }
+
+    func restartServer(_ id: UUID) {
+        guard let config = servers.first(where: { $0.id == id }) else { return }
+        processManager(for: id).restart(port: config.port, provider: config.provider, systemPrompt: config.systemPrompt)
     }
 
     private func loadServers() {
