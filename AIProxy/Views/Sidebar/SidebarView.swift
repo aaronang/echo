@@ -8,7 +8,7 @@ struct SidebarView: View {
         List(appVM.servers, selection: $appVM.selectedServerID) { server in
             ServerRowView(
                 config: server,
-                isRunning: appVM.processManager(for: server.id).isRunning,
+                processManager: appVM.processManager(for: server.id),
                 isRenaming: renamingID == server.id,
                 onCommit: { newName in
                     var updated = server

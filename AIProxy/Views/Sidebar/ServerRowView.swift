@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ServerRowView: View {
     let config: ServerConfig
-    let isRunning: Bool
+    @ObservedObject var processManager: ProcessManager
     let isRenaming: Bool
     let onCommit: (String) -> Void
     let onCancel: () -> Void
@@ -45,7 +45,7 @@ struct ServerRowView: View {
             .font(.system(size: 11))
             .frame(width: 16, height: 18)
             .foregroundStyle(
-                isRunning
+                processManager.isRunning
                     ? Color(red: 38/255, green: 191/255, blue: 77/255)
                     : Color(red: 217/255, green: 217/255, blue: 217/255)
             )
