@@ -167,7 +167,6 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
         let startTime = requestStart ?? Date()
         let onLog = self.onLog
 
-        let preview = body.prompt.count > 120 ? String(body.prompt.prefix(120)) + "…" : body.prompt
         onLog?(LogEntry(
             timestamp: startTime,
             method: "POST",
@@ -176,7 +175,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
             statusCode: nil,
             latency: nil,
             isError: false,
-            rawLine: "→ \(preview)"
+            rawLine: "→ \(body.prompt)"
         ))
 
         var responseText = ""
