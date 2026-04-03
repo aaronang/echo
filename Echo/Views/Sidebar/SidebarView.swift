@@ -26,7 +26,9 @@ struct SidebarView: View {
                     renamingID = server.id
                 }
                 Button("Copy API URL") {
-                    let url = "http://localhost:\(server.port)"
+                    let pm = appVM.processManager(for: server.id)
+                    let port = pm.actualPort > 0 ? pm.actualPort : server.port
+                    let url = "http://localhost:\(port)"
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(url, forType: .string)
                 }

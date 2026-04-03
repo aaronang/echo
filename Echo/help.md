@@ -63,6 +63,12 @@ data: {"text":"! How can I help you today?"}
 data: [DONE]
 ```
 
+## System prompt
+
+Echo injects a minimal base system prompt to ensure the underlying CLI tool behaves correctly. Beyond that, you are responsible for defining the assistant's persona and behavior — Echo does not manage this for you.
+
+It is also a good idea to specify the expected response format and structure in your system prompt. Without this, the model may return responses in a format or shape that doesn't match what your application expects.
+
 ## GET /help
 
 Returns this document.

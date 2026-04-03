@@ -6,6 +6,7 @@ class AppViewModel: ObservableObject {
     @Published var servers: [ServerConfig] = []
     @Published var selectedServerID: UUID?
     @Published var serverProcesses: [UUID: ProcessManager] = [:]
+    @Published var saveError: String?
 
     private var configURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -96,7 +97,12 @@ class AppViewModel: ObservableObject {
     }
 
     private func saveServers() {
-        guard let data = try? JSONEncoder().encode(servers) else { return }
-        try? data.write(to: configURL)
+        do {
+            let data = try JSONEncoder().encode(servers)
+            try data.write(to: configURL)
+            saveError = nil
+        } catch {
+            saveError = "Failed to save configuration: \(error.localizedDescription)"
+        }
     }
 }

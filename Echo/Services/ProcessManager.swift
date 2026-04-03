@@ -39,6 +39,8 @@ class ProcessManager: ObservableObject {
         Task {
             do {
                 try await server.start()
+                // Guard against stop()/restart() having run during the async bind.
+                guard self.server === server else { return }
                 self.isRunning = true
                 self.actualPort = port
                 self.startTime = Date()
@@ -53,9 +55,10 @@ class ProcessManager: ObservableObject {
                     statusCode: nil,
                     latency: nil,
                     isError: false,
-                    rawLine: "Listening on http://localhost:\(port)"
+                    rawLine: "Listening on http://localhost:\(port). You can tell your agent to send a GET /help request to understand how to use this server."
                 ))
             } catch {
+                guard self.server === server else { return }
                 self.appendLog(LogEntry(
                     timestamp: Date(),
                     method: "ERR",

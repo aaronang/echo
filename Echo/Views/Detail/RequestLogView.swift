@@ -46,7 +46,7 @@ struct TerminalEntryView: View {
     let entry: LogEntry
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(alignment: .top, spacing: 8) {
             Text(entry.formattedTime)
                 .font(.system(size: 13, weight: .medium, design: .monospaced))
                 .foregroundStyle(Color(nsColor: NSColor(red: 0.447, green: 0.447, blue: 0.447, alpha: 1)))

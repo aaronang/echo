@@ -45,8 +45,12 @@ struct LogEntry: Identifiable {
     }
 
     var formattedTime: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm:ss a"
-        return formatter.string(from: timestamp)
+        Self.timeFormatter.string(from: timestamp)
     }
+
+    private static let timeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "h:mm:ss a"
+        return f
+    }()
 }

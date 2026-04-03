@@ -11,6 +11,7 @@ final class ProxyServer {
 
     private var group: MultiThreadedEventLoopGroup?
     private var serverChannel: Channel?
+    private var startGeneration: Int = 0
 
     init(port: Int, provider: Provider, systemPrompt: String) {
         self.port = port
@@ -19,8 +20,10 @@ final class ProxyServer {
     }
 
     func start() async throws {
+        startGeneration += 1
+        let generation = startGeneration
+
         let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        self.group = group
 
         let provider = self.provider
         let systemPrompt = self.systemPrompt
@@ -39,10 +42,20 @@ final class ProxyServer {
             .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 16)
 
-        serverChannel = try await bootstrap.bind(host: "127.0.0.1", port: port).get()
+        let channel = try await bootstrap.bind(host: "127.0.0.1", port: port).get()
+
+        // If stop() was called while we were binding, shut down immediately.
+        guard startGeneration == generation else {
+            channel.close(promise: nil)
+            try? await group.shutdownGracefully()
+            return
+        }
+        self.group = group
+        self.serverChannel = channel
     }
 
     func stop() {
+        startGeneration += 1  // Invalidate any in-flight start().
         let ch = serverChannel
         let grp = group
         serverChannel = nil
@@ -165,6 +178,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
         var thinkingText = ""
 
         let process = ProviderProcess()
+        activeProcess?.kill()
         activeProcess = process
 
         process.start(

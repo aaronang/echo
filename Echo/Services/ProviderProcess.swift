@@ -63,24 +63,35 @@ final class ProviderProcess {
         p.standardOutput = stdout
         p.standardError = stderr
 
-        var buffer = ""
-        var finished = false
+        // @unchecked Sendable: all mutations are protected by lock.
+        final class ClaudeState: @unchecked Sendable {
+            let lock = NSLock()
+            var buffer = ""
+            var finished = false
+        }
+        let state = ClaudeState()
 
-        stdout.fileHandleForReading.readabilityHandler = { handle in
-            let data = handle.availableData
-            guard !data.isEmpty, let chunk = String(data: data, encoding: .utf8) else { return }
-            buffer += chunk
-            let lines = buffer.components(separatedBy: "\n")
-            buffer = lines.last ?? ""
+        // Ensures onComplete is called at most once from any thread.
+        let completeOnce: @Sendable (Int) -> Void = { status in
+            state.lock.lock()
+            let first = !state.finished
+            state.finished = true
+            state.lock.unlock()
+            if first { onComplete(status) }
+        }
+
+        // Parses accumulated lines and fires frames. Must be called while NOT holding lock
+        // (frames are delivered immediately; lock is re-acquired inside completeOnce).
+        let processLines: () -> Void = {
+            let lines = state.buffer.components(separatedBy: "\n")
+            state.buffer = lines.last ?? ""
             for line in lines.dropLast() {
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
                 guard !trimmed.isEmpty,
                       let eventData = trimmed.data(using: .utf8),
                       let event = try? JSONSerialization.jsonObject(with: eventData) as? [String: Any]
                 else { continue }
-
                 guard let type = event["type"] as? String else { continue }
-
                 if type == "system",
                    let subtype = event["subtype"] as? String, subtype == "init",
                    let sid = event["session_id"] as? String {
@@ -101,22 +112,43 @@ final class ProviderProcess {
                        let result = event["result"] as? String {
                         onLog?("Error: \(result)")
                     }
-                    finished = true
                     onFrame(.done)
-                    onComplete(200)
+                    completeOnce(200)
+                    return
                 }
             }
+        }
+
+        stdout.fileHandleForReading.readabilityHandler = { handle in
+            let data = handle.availableData
+            guard !data.isEmpty, let chunk = String(data: data, encoding: .utf8) else { return }
+            state.lock.lock()
+            state.buffer += chunk
+            state.lock.unlock()
+            processLines()
         }
 
         stderr.fileHandleForReading.readabilityHandler = { _ in }
 
         p.terminationHandler = { proc in
-            guard !finished else { return }
+            // Disable handler and drain any data still buffered in the pipe.
+            stdout.fileHandleForReading.readabilityHandler = nil
+            let remaining = stdout.fileHandleForReading.readDataToEndOfFile()
+            if let chunk = String(data: remaining, encoding: .utf8), !chunk.isEmpty {
+                state.lock.lock()
+                state.buffer += chunk
+                state.lock.unlock()
+                processLines()
+            }
+            state.lock.lock()
+            let alreadyFinished = state.finished
+            state.lock.unlock()
+            guard !alreadyFinished else { return }
             if proc.terminationStatus != 0 {
                 onLog?("Error: claude exited with code \(proc.terminationStatus)")
                 onFrame(.error("claude exited with code \(proc.terminationStatus)"))
-                onComplete(500)
             }
+            completeOnce(500)
         }
 
         do {
@@ -148,16 +180,12 @@ final class ProviderProcess {
         p.standardOutput = stdout
         p.standardError = stderr
 
-        var output = ""
-        stdout.fileHandleForReading.readabilityHandler = { handle in
-            let data = handle.availableData
-            guard !data.isEmpty, let chunk = String(data: data, encoding: .utf8) else { return }
-            output += chunk
-        }
         stderr.fileHandleForReading.readabilityHandler = { _ in }
 
         p.terminationHandler = { _ in
-            let trimmed = output.trimmingCharacters(in: .whitespacesAndNewlines)
+            // Read all output after process exit — no readabilityHandler race possible.
+            let trimmed = String(data: stdout.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             guard let data = trimmed.data(using: .utf8),
                   let event = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
                 onFrame(.error("Failed to parse \(command) output"))
