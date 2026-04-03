@@ -8,6 +8,7 @@ final class ProxyServer {
     private let provider: Provider
     private let systemPrompt: String
     var onLog: (@Sendable (LogEntry) -> Void)?
+    var onUnexpectedClose: (@Sendable () -> Void)?
 
     private var group: MultiThreadedEventLoopGroup?
     private var serverChannel: Channel?
@@ -52,18 +53,22 @@ final class ProxyServer {
         }
         self.group = group
         self.serverChannel = channel
+
+        let onUnexpectedClose = self.onUnexpectedClose
+        channel.closeFuture.whenComplete { [weak self] _ in
+            guard let self, self.startGeneration == generation else { return }
+            onUnexpectedClose?()
+        }
     }
 
-    func stop() {
+    func stop() async {
         startGeneration += 1  // Invalidate any in-flight start().
         let ch = serverChannel
         let grp = group
         serverChannel = nil
         group = nil
-        DispatchQueue.global(qos: .background).async {
-            ch?.close(promise: nil)
-            try? grp?.syncShutdownGracefully()
-        }
+        try? await ch?.close().get()
+        try? await grp?.shutdownGracefully()
     }
 }
 

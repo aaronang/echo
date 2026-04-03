@@ -50,7 +50,9 @@ final class ProviderProcess {
         onComplete: @escaping @Sendable (Int) -> Void
     ) {
         var args = ["-p", "--output-format", "stream-json", "--verbose",
-                    "--include-partial-messages", "--effort", "high", "--tools", ""]
+                    "--include-partial-messages", "--effort", "high",
+                    "--tools", "WebSearch,WebFetch",
+                    "--allowedTools", "WebSearch,WebFetch"]
         if let sid = sessionID { args += ["--resume", sid] }
 
         let p = makeProcess(command: "claude", args: args, systemPrompt: systemPrompt)
@@ -286,11 +288,16 @@ final class ProviderProcess {
     private func buildAuggieArgs(prompt: String, sessionID: String?) -> [String] {
         var args = ["-p", "--output-format", "json", "--instruction", prompt]
         if let sid = sessionID { args += ["--resume", sid] }
+        let denied = ["view", "save-file", "str-replace-editor", "remove-files",
+                      "launch-process", "read-process", "write-process",
+                      "kill-process", "list-processes", "codebase-retrieval"]
+        for tool in denied { args += ["--permission", "\(tool):deny"] }
         return args
     }
 
     private func buildDroidArgs(prompt: String, sessionID: String?) -> [String] {
-        var args = ["exec", "--output-format", "json"]
+        var args = ["exec", "--output-format", "json",
+                    "--disabled-tools", "Read,Edit,Create,Execute,Glob,Grep,LS,GenerateDroid"]
         if let sid = sessionID { args += ["--session-id", sid] }
         args.append(prompt)
         return args

@@ -34,6 +34,19 @@ class ProcessManager: ObservableObject {
                 self?.appendLog(entry)
             }
         }
+        server.onUnexpectedClose = { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self, self.isRunning else { return }
+                let old = self.server
+                self.server = nil
+                self.isRunning = false
+                self.actualPort = 0
+                self.startTime = nil
+                self.logWarning("Server closed unexpectedly, restarting…")
+                await old?.stop()
+                self.start(port: port, provider: provider, systemPrompt: systemPrompt, silent: true)
+            }
+        }
         self.server = server
 
         Task {
@@ -76,21 +89,25 @@ class ProcessManager: ObservableObject {
 
     func stop() {
         logInfo("Server stopped")
-        server?.stop()
+        let s = server
         server = nil
         isRunning = false
         actualPort = 0
         startTime = nil
+        Task { await s?.stop() }
     }
 
     func restart(port: Int, provider: Provider, systemPrompt: String) {
         logInfo("Restarting server…")
-        server?.stop()
+        let s = server
         server = nil
         isRunning = false
         actualPort = 0
         startTime = nil
-        start(port: port, provider: provider, systemPrompt: systemPrompt, silent: true)
+        Task {
+            await s?.stop()
+            self.start(port: port, provider: provider, systemPrompt: systemPrompt, silent: true)
+        }
     }
 
     func clearLogs() {
