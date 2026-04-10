@@ -306,7 +306,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
     private func writeCORSPreflight(context: ChannelHandlerContext) {
         var headers = HTTPHeaders()
         headers.add(name: "Access-Control-Allow-Origin", value: "*")
-        headers.add(name: "Access-Control-Allow-Methods", value: "POST, OPTIONS")
+        headers.add(name: "Access-Control-Allow-Methods", value: "GET, POST, OPTIONS")
         headers.add(name: "Access-Control-Allow-Headers", value: "Content-Type")
         let head = HTTPResponseHead(version: .http1_1, status: .ok, headers: headers)
         context.write(wrapOutboundOut(.head(head)), promise: nil)
