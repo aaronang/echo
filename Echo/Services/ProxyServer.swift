@@ -137,6 +137,12 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
             return
         }
 
+        // Anthropic Messages API endpoint
+        if head.uri == "/v1/messages" {
+            handleAnthropicMessages(context: context)
+            return
+        }
+
         struct GenerateBody: Decodable {
             let prompt: String
             let session_id: String?
@@ -259,6 +265,312 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                 }
             }
         )
+    }
+
+    // MARK: - Anthropic Messages API
+
+    private func handleAnthropicMessages(context: ChannelHandlerContext) {
+        guard let head = requestHead else { return }
+
+        struct AnthropicMessage: Decodable {
+            let role: String
+            let content: String
+        }
+        struct AnthropicBody: Decodable {
+            let model: String?
+            let max_tokens: Int?
+            let stream: Bool?
+            let system: String?
+            let messages: [AnthropicMessage]
+        }
+
+        let bytes = Data(bodyBuffer.readableBytesView)
+        guard let body = try? JSONDecoder().decode(AnthropicBody.self, from: bytes) else {
+            writeAnthropicError(context: context, status: .badRequest,
+                                message: "Invalid request body")
+            return
+        }
+
+        guard let lastUserMessage = body.messages.last(where: { $0.role == "user" }) else {
+            writeAnthropicError(context: context, status: .badRequest,
+                                message: "messages must contain at least one user message")
+            return
+        }
+
+        let prompt = lastUserMessage.content
+        let isStreaming = body.stream ?? false
+        let msgID = "msg_\(UUID().uuidString.lowercased().prefix(24))"
+        let modelName = body.model ?? "claude-sonnet-4-20250514"
+
+        let startTime = requestStart ?? Date()
+        let onLog = self.onLog
+        let channel = context.channel
+
+        onLog?(LogEntry(
+            timestamp: startTime,
+            method: "POST",
+            path: "/v1/messages",
+            info: "",
+            statusCode: nil,
+            latency: nil,
+            isError: false,
+            rawLine: "→ \(prompt)"
+        ))
+
+        let process = ProviderProcess()
+        activeProcess?.kill()
+        activeProcess = process
+
+        if isStreaming {
+            // SSE response headers
+            var headers = HTTPHeaders()
+            headers.add(name: "Content-Type", value: "text/event-stream")
+            headers.add(name: "Cache-Control", value: "no-cache")
+            headers.add(name: "Connection", value: "keep-alive")
+            headers.add(name: "Access-Control-Allow-Origin", value: "*")
+            let responseHead = HTTPResponseHead(version: head.version, status: .ok, headers: headers)
+            context.writeAndFlush(wrapOutboundOut(.head(responseHead)), promise: nil)
+
+            // Send message_start
+            let messageStartJSON = """
+            {"type":"message_start","message":{"id":"\(msgID)","type":"message","role":"assistant","content":[],"model":"\(modelName)","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"output_tokens":0}}}
+            """
+            Self.writeSSEEvent(channel: channel, event: "message_start", data: messageStartJSON)
+
+            var hasThinking = false
+            var thinkingBlockOpen = false
+            var textBlockOpen = false
+            var textBlockIndex = 0
+            var responseText = ""
+            var thinkingText = ""
+
+            process.start(
+                provider: provider,
+                prompt: prompt,
+                sessionID: nil,
+                systemPrompt: systemPrompt,
+                onFrame: { [weak channel] frame in
+                    guard let channel else { return }
+                    channel.eventLoop.execute {
+                        switch frame {
+                        case .thinking(let t):
+                            thinkingText += t
+                            if !hasThinking {
+                                hasThinking = true
+                                thinkingBlockOpen = true
+                                textBlockIndex = 1
+                                // Start thinking content block at index 0
+                                Self.writeSSEEvent(channel: channel, event: "content_block_start",
+                                    data: "{\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}}")
+                            }
+                            let escaped = Self.jsonEscape(t)
+                            Self.writeSSEEvent(channel: channel, event: "content_block_delta",
+                                data: "{\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"\(escaped)\"}}")
+
+                        case .text(let t):
+                            responseText += t
+                            // Close thinking block if open
+                            if thinkingBlockOpen {
+                                thinkingBlockOpen = false
+                                Self.writeSSEEvent(channel: channel, event: "content_block_stop",
+                                    data: "{\"type\":\"content_block_stop\",\"index\":0}")
+                            }
+                            // Open text block if needed
+                            if !textBlockOpen {
+                                textBlockOpen = true
+                                Self.writeSSEEvent(channel: channel, event: "content_block_start",
+                                    data: "{\"type\":\"content_block_start\",\"index\":\(textBlockIndex),\"content_block\":{\"type\":\"text\",\"text\":\"\"}}")
+                            }
+                            let escaped = Self.jsonEscape(t)
+                            Self.writeSSEEvent(channel: channel, event: "content_block_delta",
+                                data: "{\"type\":\"content_block_delta\",\"index\":\(textBlockIndex),\"delta\":{\"type\":\"text_delta\",\"text\":\"\(escaped)\"}}")
+
+                        case .error(let e):
+                            let escaped = Self.jsonEscape(e)
+                            Self.writeSSEEvent(channel: channel, event: "error",
+                                data: "{\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"\(escaped)\"}}")
+
+                        case .done:
+                            // Close any open blocks
+                            if thinkingBlockOpen {
+                                Self.writeSSEEvent(channel: channel, event: "content_block_stop",
+                                    data: "{\"type\":\"content_block_stop\",\"index\":0}")
+                            }
+                            if textBlockOpen {
+                                Self.writeSSEEvent(channel: channel, event: "content_block_stop",
+                                    data: "{\"type\":\"content_block_stop\",\"index\":\(textBlockIndex)}")
+                            }
+                            // message_delta with stop_reason
+                            Self.writeSSEEvent(channel: channel, event: "message_delta",
+                                data: "{\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":0}}")
+                            // message_stop
+                            Self.writeSSEEvent(channel: channel, event: "message_stop",
+                                data: "{\"type\":\"message_stop\"}")
+
+                        case .sessionID:
+                            break
+                        }
+                    }
+                },
+                onLog: { message in
+                    onLog?(LogEntry(
+                        timestamp: Date(),
+                        method: "POST",
+                        path: "/v1/messages",
+                        info: "",
+                        statusCode: nil,
+                        latency: nil,
+                        isError: message.hasPrefix("Error"),
+                        rawLine: message
+                    ))
+                },
+                onComplete: { [weak channel] statusCode in
+                    guard let channel else { return }
+                    channel.eventLoop.execute {
+                        channel.writeAndFlush(HTTPServerResponsePart.end(nil), promise: nil)
+                        let ms = Int(Date().timeIntervalSince(startTime) * 1000)
+                        if !thinkingText.isEmpty {
+                            onLog?(LogEntry(timestamp: startTime, method: "POST", path: "/v1/messages",
+                                            info: "", statusCode: nil, latency: nil, isError: false,
+                                            rawLine: "💭 \(thinkingText)"))
+                        }
+                        if !responseText.isEmpty {
+                            onLog?(LogEntry(timestamp: startTime, method: "POST", path: "/v1/messages",
+                                            info: "", statusCode: nil, latency: nil, isError: false,
+                                            rawLine: "← \(responseText)"))
+                        }
+                        onLog?(LogEntry(timestamp: startTime, method: "POST", path: "/v1/messages",
+                                        info: "", statusCode: statusCode, latency: "\(ms)ms",
+                                        isError: statusCode >= 400,
+                                        rawLine: "← \(statusCode) (\(ms)ms)"))
+                    }
+                }
+            )
+        } else {
+            // Non-streaming: collect all frames, then return complete JSON
+            var responseText = ""
+            var thinkingText = ""
+
+            process.start(
+                provider: provider,
+                prompt: prompt,
+                sessionID: nil,
+                systemPrompt: systemPrompt,
+                onFrame: { frame in
+                    switch frame {
+                    case .text(let t): responseText += t
+                    case .thinking(let t): thinkingText += t
+                    default: break
+                    }
+                },
+                onLog: { message in
+                    onLog?(LogEntry(
+                        timestamp: Date(),
+                        method: "POST",
+                        path: "/v1/messages",
+                        info: "",
+                        statusCode: nil,
+                        latency: nil,
+                        isError: message.hasPrefix("Error"),
+                        rawLine: message
+                    ))
+                },
+                onComplete: { [weak channel] statusCode in
+                    guard let channel else { return }
+                    channel.eventLoop.execute {
+                        var contentArray: [[String: Any]] = []
+                        if !thinkingText.isEmpty {
+                            contentArray.append(["type": "thinking", "thinking": thinkingText, "signature": ""])
+                        }
+                        contentArray.append(["type": "text", "text": responseText])
+
+                        let responseDict: [String: Any] = [
+                            "id": msgID,
+                            "type": "message",
+                            "role": "assistant",
+                            "content": contentArray,
+                            "model": modelName,
+                            "stop_reason": "end_turn",
+                            "stop_sequence": NSNull(),
+                            "usage": ["input_tokens": 0, "output_tokens": 0]
+                        ]
+
+                        let jsonData = (try? JSONSerialization.data(withJSONObject: responseDict, options: []))
+                            ?? "{}".data(using: .utf8)!
+                        let jsonString = String(data: jsonData, encoding: .utf8) ?? "{}"
+
+                        var headers = HTTPHeaders()
+                        headers.add(name: "Content-Type", value: "application/json")
+                        headers.add(name: "Access-Control-Allow-Origin", value: "*")
+                        headers.add(name: "Content-Length", value: "\(jsonString.utf8.count)")
+                        let respHead = HTTPResponseHead(version: head.version, status: .ok, headers: headers)
+                        channel.write(HTTPServerResponsePart.head(respHead), promise: nil)
+                        var buf = channel.allocator.buffer(capacity: jsonString.utf8.count)
+                        buf.writeString(jsonString)
+                        channel.write(HTTPServerResponsePart.body(.byteBuffer(buf)), promise: nil)
+                        channel.writeAndFlush(HTTPServerResponsePart.end(nil), promise: nil)
+
+                        let ms = Int(Date().timeIntervalSince(startTime) * 1000)
+                        if !thinkingText.isEmpty {
+                            onLog?(LogEntry(timestamp: startTime, method: "POST", path: "/v1/messages",
+                                            info: "", statusCode: nil, latency: nil, isError: false,
+                                            rawLine: "💭 \(thinkingText)"))
+                        }
+                        if !responseText.isEmpty {
+                            onLog?(LogEntry(timestamp: startTime, method: "POST", path: "/v1/messages",
+                                            info: "", statusCode: nil, latency: nil, isError: false,
+                                            rawLine: "← \(responseText)"))
+                        }
+                        onLog?(LogEntry(timestamp: startTime, method: "POST", path: "/v1/messages",
+                                        info: "", statusCode: statusCode, latency: "\(ms)ms",
+                                        isError: statusCode >= 400,
+                                        rawLine: "← \(statusCode) (\(ms)ms)"))
+                    }
+                }
+            )
+        }
+    }
+
+    private static func writeSSEEvent(channel: Channel, event: String, data: String) {
+        let sseString = "event: \(event)\ndata: \(data)\n\n"
+        var buf = channel.allocator.buffer(capacity: sseString.utf8.count)
+        buf.writeString(sseString)
+        channel.writeAndFlush(HTTPServerResponsePart.body(.byteBuffer(buf)), promise: nil)
+    }
+
+    private static func jsonEscape(_ string: String) -> String {
+        string
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\r")
+            .replacingOccurrences(of: "\t", with: "\\t")
+    }
+
+    private func writeAnthropicError(context: ChannelHandlerContext, status: HTTPResponseStatus, message: String) {
+        let escaped = Self.jsonEscape(message)
+        let body = "{\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"\(escaped)\"}}"
+        var headers = HTTPHeaders()
+        headers.add(name: "Content-Type", value: "application/json")
+        headers.add(name: "Access-Control-Allow-Origin", value: "*")
+        headers.add(name: "Content-Length", value: "\(body.utf8.count)")
+        let head = HTTPResponseHead(version: .http1_1, status: status, headers: headers)
+        context.write(wrapOutboundOut(.head(head)), promise: nil)
+        var buf = context.channel.allocator.buffer(capacity: body.utf8.count)
+        buf.writeString(body)
+        context.write(wrapOutboundOut(.body(.byteBuffer(buf))), promise: nil)
+        context.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)
+        let ms = Int((requestStart.map { Date().timeIntervalSince($0) } ?? 0) * 1000)
+        onLog?(LogEntry(
+            timestamp: requestStart ?? Date(),
+            method: "POST",
+            path: "/v1/messages",
+            info: "",
+            statusCode: Int(status.code),
+            latency: "\(ms)ms",
+            isError: true,
+            rawLine: "← \(status.code) \(message) (\(ms)ms)"
+        ))
     }
 
     // MARK: - SSE Helpers
