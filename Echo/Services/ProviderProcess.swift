@@ -189,8 +189,14 @@ final class ProviderProcess {
 
         p.terminationHandler = { _ in
             // Read all output after process exit — no readabilityHandler race possible.
-            let trimmed = String(data: stdout.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
+            let raw = String(data: stdout.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
                 .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let trimmed: String
+            if let braceIndex = raw.firstIndex(of: "{") {
+                trimmed = String(raw[braceIndex...])
+            } else {
+                trimmed = raw
+            }
             guard let data = trimmed.data(using: .utf8),
                   let event = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
                 onFrame(.error("Failed to parse \(command) output"))
@@ -226,6 +232,52 @@ final class ProviderProcess {
             onFrame(.error(error.localizedDescription))
             onComplete(500)
         }
+    }
+
+    // MARK: - Model Listing
+
+    struct ModelInfo {
+        let id: String
+        let displayName: String
+    }
+
+    static func listModels(for provider: Provider) -> [ModelInfo] {
+        switch provider {
+        case .claude: return claudeModels()
+        case .auggie: return auggieModels()
+        case .droid: return droidModels()
+        }
+    }
+
+    private static func claudeModels() -> [ModelInfo] {
+        [
+            ModelInfo(id: "claude-opus-4-6", displayName: "Claude Opus 4.6"),
+            ModelInfo(id: "claude-sonnet-4-6", displayName: "Claude Sonnet 4.6"),
+            ModelInfo(id: "claude-haiku-4-5-20251001", displayName: "Claude Haiku 4.5"),
+            ModelInfo(id: "opus", displayName: "Claude Opus (alias)"),
+            ModelInfo(id: "sonnet", displayName: "Claude Sonnet (alias)"),
+            ModelInfo(id: "haiku", displayName: "Claude Haiku (alias)"),
+        ]
+    }
+
+    private static func auggieModels() -> [ModelInfo] {
+        [
+            ModelInfo(id: "opus4.6", displayName: "Opus 4.6"),
+            ModelInfo(id: "sonnet4.6", displayName: "Sonnet 4.6"),
+            ModelInfo(id: "haiku4.5", displayName: "Haiku 4.5"),
+            ModelInfo(id: "gpt5.2", displayName: "GPT-5.2"),
+            ModelInfo(id: "gemini-3.1-pro-preview", displayName: "Gemini 3.1 Pro"),
+        ]
+    }
+
+    private static func droidModels() -> [ModelInfo] {
+        [
+            ModelInfo(id: "claude-opus-4-6", displayName: "Claude Opus 4.6"),
+            ModelInfo(id: "claude-sonnet-4-6", displayName: "Claude Sonnet 4.6"),
+            ModelInfo(id: "gpt-5.2", displayName: "GPT-5.2"),
+            ModelInfo(id: "gpt-5.4", displayName: "GPT-5.4"),
+            ModelInfo(id: "gemini-3.1-pro-preview", displayName: "Gemini 3.1 Pro"),
+        ]
     }
 
     // MARK: - Helpers

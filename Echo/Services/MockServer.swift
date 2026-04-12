@@ -3,7 +3,7 @@ import NIOCore
 import NIOPosix
 import NIOHTTP1
 
-final class ProxyServer {
+final class MockServer {
     private let port: Int
     private let provider: Provider
     private let systemPrompt: String
@@ -183,7 +183,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
 
         let prompt = lastUserMessage.content
         let isStreaming = body.stream ?? false
-        let msgID = "msg_\(UUID().uuidString.lowercased().prefix(24))"
+        let msgID = "msg_\(UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: "").prefix(24))"
         let modelName = body.model ?? "claude-sonnet-4-20250514"
 
         let startTime = requestStart ?? Date()
@@ -258,7 +258,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                             if thinkingBlockOpen {
                                 thinkingBlockOpen = false
                                 Self.writeSSEEvent(channel: channel, event: "content_block_stop",
-                                    data: "{\"type\":\"content_block_stop\",\"index\":0}")
+                                    data: "{\"type\":\"content_block_stop\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}}")
                             }
                             // Open text block if needed
                             if !textBlockOpen {
@@ -279,7 +279,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                             // Close any open blocks
                             if thinkingBlockOpen {
                                 Self.writeSSEEvent(channel: channel, event: "content_block_stop",
-                                    data: "{\"type\":\"content_block_stop\",\"index\":0}")
+                                    data: "{\"type\":\"content_block_stop\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}}")
                             }
                             if textBlockOpen {
                                 Self.writeSSEEvent(channel: channel, event: "content_block_stop",
