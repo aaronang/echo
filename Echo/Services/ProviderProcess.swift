@@ -344,16 +344,19 @@ final class ProviderProcess {
         var args = ["-p", "--output-format", "json", "--instruction", prompt]
         if let sid = sessionID { args += ["--resume", sid] }
         if let model = model { args += ["--model", model] }
-        let denied = ["view", "save-file", "str-replace-editor", "remove-files",
-                      "launch-process", "read-process", "write-process",
-                      "kill-process", "list-processes", "codebase-retrieval"]
-        for tool in denied { args += ["--permission", "\(tool):deny"] }
+        // Remove all non-web tools so only web-search and web-fetch remain.
+        let removed = ["remove-files", "save-file", "apply_patch", "str-replace-editor", "view",
+                       "launch-process", "kill-process", "read-process", "write-process", "list-processes",
+                       "github-api", "sub-agent-explore", "sub-agent-plan",
+                       "view_tasklist", "reorganize_tasklist", "update_tasks", "add_tasks",
+                       "codebase-retrieval"]
+        for tool in removed { args += ["--remove-tool", tool] }
         return args
     }
 
     private func buildDroidArgs(prompt: String, sessionID: String?, model: String? = nil) -> [String] {
         var args = ["exec", "--output-format", "json",
-                    "--disabled-tools", "Read,Edit,Create,Execute,Glob,Grep,LS,GenerateDroid"]
+                    "--enabled-tools", "WebSearch,FetchUrl"]
         if let sid = sessionID { args += ["--session-id", sid] }
         if let model = model { args += ["--model", model] }
         args.append(prompt)
