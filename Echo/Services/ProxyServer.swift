@@ -132,6 +132,11 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
             return
         }
 
+        if head.method == .GET && head.uri == "/v1/models" {
+            handleListModels(context: context)
+            return
+        }
+
         guard head.method == .POST else {
             writeError(context: context, status: .notFound, message: "Not found")
             return
@@ -455,6 +460,45 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
     }
 
 
+
+    // MARK: - Models
+
+    private func handleListModels(context: ChannelHandlerContext) {
+        let models = ProviderProcess.listModels(for: provider)
+
+        var dataArray: [[String: String]] = []
+        for m in models {
+            dataArray.append([
+                "id": m.id,
+                "type": "model",
+                "display_name": m.displayName,
+                "created_at": "2025-01-01T00:00:00Z"
+            ])
+        }
+
+        let firstId = models.first?.id ?? ""
+        let lastId = models.last?.id ?? ""
+        let responseDict: [String: Any] = [
+            "data": dataArray,
+            "has_more": false,
+            "first_id": firstId,
+            "last_id": lastId
+        ]
+
+        let jsonData = (try? JSONSerialization.data(withJSONObject: responseDict, options: [])) ?? "{}".data(using: .utf8)!
+        let body = String(data: jsonData, encoding: .utf8) ?? "{}"
+
+        var headers = HTTPHeaders()
+        headers.add(name: "Content-Type", value: "application/json")
+        headers.add(name: "Access-Control-Allow-Origin", value: "*")
+        headers.add(name: "Content-Length", value: "\(body.utf8.count)")
+        let head = HTTPResponseHead(version: .http1_1, status: .ok, headers: headers)
+        context.write(wrapOutboundOut(.head(head)), promise: nil)
+        var buf = context.channel.allocator.buffer(capacity: body.utf8.count)
+        buf.writeString(body)
+        context.write(wrapOutboundOut(.body(.byteBuffer(buf))), promise: nil)
+        context.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)
+    }
 
     // MARK: - Help
 
