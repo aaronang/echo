@@ -282,20 +282,15 @@ final class ProviderProcess {
 
     // MARK: - Helpers
 
-    private static let baseSystemPrompt = """
-    You are a helpful AI assistant. The user may ask you anything — do not assume this is a coding or software engineering task unless they explicitly say so. Respond naturally and helpfully to whatever the user asks. You do not have access to a file system and should not attempt to read, write, or reference local files. You are able to search the web to find up-to-date information when needed.
-    """
-
     private func makeProcess(command: String, args: [String], systemPrompt: String) -> Process {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: resolveCommand(command))
         p.arguments = args
         var env = ProcessInfo.processInfo.environment
         env["PATH"] = Self.resolvedPATH
-        let combined = systemPrompt.isEmpty
-            ? Self.baseSystemPrompt
-            : Self.baseSystemPrompt + "\n\n" + systemPrompt
-        env["SYSTEM_PROMPT"] = combined
+        if !systemPrompt.isEmpty {
+            env["SYSTEM_PROMPT"] = systemPrompt
+        }
         p.environment = env
         return p
     }
