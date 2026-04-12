@@ -464,6 +464,20 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
     // MARK: - Models
 
     private func handleListModels(context: ChannelHandlerContext) {
+        let startTime = requestStart ?? Date()
+        let onLog = self.onLog
+
+        onLog?(LogEntry(
+            timestamp: startTime,
+            method: "GET",
+            path: "/v1/models",
+            info: "",
+            statusCode: nil,
+            latency: nil,
+            isError: false,
+            rawLine: "→ GET /v1/models"
+        ))
+
         let models = ProviderProcess.listModels(for: provider)
 
         var dataArray: [[String: String]] = []
@@ -498,6 +512,20 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
         buf.writeString(body)
         context.write(wrapOutboundOut(.body(.byteBuffer(buf))), promise: nil)
         context.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)
+
+        let ms = Int(Date().timeIntervalSince(startTime) * 1000)
+        let modelIds = models.map { $0.id }
+        let modelList = modelIds.joined(separator: ", ")
+        onLog?(LogEntry(
+            timestamp: startTime,
+            method: "GET",
+            path: "/v1/models",
+            info: "",
+            statusCode: 200,
+            latency: "\(ms)ms",
+            isError: false,
+            rawLine: "← 200 [\(modelList)] (\(ms)ms)"
+        ))
     }
 
     // MARK: - Help
