@@ -15,6 +15,7 @@ final class ProviderProcess {
         provider: Provider,
         prompt: String,
         sessionID: String?,
+        model: String? = nil,
         systemPrompt: String,
         onFrame: @escaping @Sendable (SSEFrame) -> Void,
         onLog: (@Sendable (String) -> Void)? = nil,
@@ -23,14 +24,14 @@ final class ProviderProcess {
         switch provider {
         case .claude:
             startClaude(prompt: prompt, sessionID: sessionID, systemPrompt: systemPrompt,
-                        onFrame: onFrame, onLog: onLog, onComplete: onComplete)
+                        model: model, onFrame: onFrame, onLog: onLog, onComplete: onComplete)
         case .auggie:
             startBatch(command: "auggie",
-                       args: buildAuggieArgs(prompt: prompt, sessionID: sessionID),
+                       args: buildAuggieArgs(prompt: prompt, sessionID: sessionID, model: model),
                        systemPrompt: systemPrompt, onFrame: onFrame, onLog: onLog, onComplete: onComplete)
         case .droid:
             startBatch(command: "droid",
-                       args: buildDroidArgs(prompt: prompt, sessionID: sessionID),
+                       args: buildDroidArgs(prompt: prompt, sessionID: sessionID, model: model),
                        systemPrompt: systemPrompt, onFrame: onFrame, onLog: onLog, onComplete: onComplete)
         }
     }
@@ -44,6 +45,7 @@ final class ProviderProcess {
     private func startClaude(
         prompt: String,
         sessionID: String?,
+        model: String?,
         systemPrompt: String,
         onFrame: @escaping @Sendable (SSEFrame) -> Void,
         onLog: (@Sendable (String) -> Void)?,
@@ -53,6 +55,7 @@ final class ProviderProcess {
                     "--include-partial-messages", "--effort", "high",
                     "--tools", "WebSearch,WebFetch",
                     "--allowedTools", "WebSearch,WebFetch"]
+        if let m = model { args += ["--model", m] }
         if let sid = sessionID { args += ["--resume", sid] }
 
         let p = makeProcess(command: "claude", args: args, systemPrompt: systemPrompt)
@@ -285,9 +288,10 @@ final class ProviderProcess {
         return versions.sorted().reversed().map { "\(nvmNodeDir)/\($0)/bin" }
     }
 
-    private func buildAuggieArgs(prompt: String, sessionID: String?) -> [String] {
+    private func buildAuggieArgs(prompt: String, sessionID: String?, model: String? = nil) -> [String] {
         var args = ["-p", "--output-format", "json", "--instruction", prompt]
         if let sid = sessionID { args += ["--resume", sid] }
+        if let model = model { args += ["--model", model] }
         let denied = ["view", "save-file", "str-replace-editor", "remove-files",
                       "launch-process", "read-process", "write-process",
                       "kill-process", "list-processes", "codebase-retrieval"]
@@ -295,10 +299,11 @@ final class ProviderProcess {
         return args
     }
 
-    private func buildDroidArgs(prompt: String, sessionID: String?) -> [String] {
+    private func buildDroidArgs(prompt: String, sessionID: String?, model: String? = nil) -> [String] {
         var args = ["exec", "--output-format", "json",
                     "--disabled-tools", "Read,Edit,Create,Execute,Glob,Grep,LS,GenerateDroid"]
         if let sid = sessionID { args += ["--session-id", sid] }
+        if let model = model { args += ["--model", model] }
         args.append(prompt)
         return args
     }

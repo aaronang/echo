@@ -348,6 +348,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                 provider: provider,
                 prompt: prompt,
                 sessionID: nil,
+                model: body.model,
                 systemPrompt: systemPrompt,
                 onFrame: { [weak channel] frame in
                     guard let channel else { return }
@@ -455,6 +456,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                 provider: provider,
                 prompt: prompt,
                 sessionID: nil,
+                model: body.model,
                 systemPrompt: systemPrompt,
                 onFrame: { frame in
                     switch frame {
