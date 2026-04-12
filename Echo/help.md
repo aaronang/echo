@@ -222,9 +222,9 @@ The provider will have context from the first turn and can respond accordingly.
 
 ## System prompt
 
-Echo injects a minimal base system prompt to ensure the underlying CLI tool behaves correctly. Beyond that, you are responsible for defining the assistant's persona and behavior — Echo does not manage this for you.
+Echo passes the `system` field from the request directly to the underlying CLI provider without modification. Echo does not inject any system prompt of its own.
 
-It is also a good idea to specify the expected response format and structure in your system prompt. Without this, the model may return responses in a format or shape that doesn't match what your application expects.
+It is a good idea to specify the expected response format and structure in your system prompt. Without this, the model may return responses in a format or shape that doesn't match what your application expects.
 
 ## GET /help
 
