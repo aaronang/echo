@@ -23,8 +23,8 @@ final class ProviderProcess {
     ) {
         switch provider {
         case .claude:
-            startClaude(prompt: prompt, sessionID: sessionID, systemPrompt: systemPrompt,
-                        model: model, onFrame: onFrame, onLog: onLog, onComplete: onComplete)
+            startClaude(prompt: prompt, sessionID: sessionID, model: model,
+                        systemPrompt: systemPrompt, onFrame: onFrame, onLog: onLog, onComplete: onComplete)
         case .auggie:
             startBatch(command: "auggie",
                        args: buildAuggieArgs(prompt: prompt, sessionID: sessionID, model: model),
