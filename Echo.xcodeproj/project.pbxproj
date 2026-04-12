@@ -13,7 +13,7 @@
 		358B2E22F1D39356CB6513F4 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C052B882DA0AAB5E0E358D46 /* AppViewModel.swift */; };
 		405012F0E5F6CC22E3144B33 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 845F0F4B63E51A427EFBB715 /* ContentView.swift */; };
 		5B3CAFC204CFA077510FA8B8 /* ProcessManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDB8C96F08B942725E4B6471 /* ProcessManager.swift */; };
-		61F6E4D93D82D96944C99A2B /* ProxyServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01DA808ADDE553C11A3C7083 /* ProxyServer.swift */; };
+		61F6E4D93D82D96944C99A2B /* MockServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01DA808ADDE553C11A3C7083 /* MockServer.swift */; };
 		654583C31A8D92A4694196F5 /* NIOHTTP1 in Frameworks */ = {isa = PBXBuildFile; productRef = AE3861C3327EFB688972A7C4 /* NIOHTTP1 */; };
 		7292D293F7B2C7FCA6A98353 /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8EEE9A82C10D1DB2B31FC52 /* PreferencesView.swift */; };
 		7BFC61664BBC29644C8DDA68 /* EchoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7827EC7280BF60FAC8B77C9 /* EchoApp.swift */; };
@@ -33,7 +33,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		01DA808ADDE553C11A3C7083 /* ProxyServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProxyServer.swift; sourceTree = "<group>"; };
+		01DA808ADDE553C11A3C7083 /* MockServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockServer.swift; sourceTree = "<group>"; };
 		1A2B3C4D5E6F7A8B9C0D1E30 /* help.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = help.md; sourceTree = "<group>"; };
 		1F377FF39BBFA67436F7FBAD /* LogEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogEntry.swift; sourceTree = "<group>"; };
 		32EB7A206BBFE2636E6EA6FE /* ProviderProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderProcess.swift; sourceTree = "<group>"; };
@@ -111,7 +111,7 @@
 				DF61218B9BBD4071C7C55C87 /* LogParser.swift */,
 				FDB8C96F08B942725E4B6471 /* ProcessManager.swift */,
 				32EB7A206BBFE2636E6EA6FE /* ProviderProcess.swift */,
-				01DA808ADDE553C11A3C7083 /* ProxyServer.swift */,
+				01DA808ADDE553C11A3C7083 /* MockServer.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -256,7 +256,7 @@
 				7292D293F7B2C7FCA6A98353 /* PreferencesView.swift in Sources */,
 				5B3CAFC204CFA077510FA8B8 /* ProcessManager.swift in Sources */,
 				BAD760A76A04B67A73014D74 /* ProviderProcess.swift in Sources */,
-				61F6E4D93D82D96944C99A2B /* ProxyServer.swift in Sources */,
+				61F6E4D93D82D96944C99A2B /* MockServer.swift in Sources */,
 				F96981DFA340559F8FFE87D1 /* RequestLogView.swift in Sources */,
 				FE66AB106B457D971395E91F /* RunningBadge.swift in Sources */,
 				EBA1E487FF6FE01515732AA8 /* ServerConfig.swift in Sources */,

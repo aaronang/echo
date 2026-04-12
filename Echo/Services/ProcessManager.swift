@@ -11,7 +11,7 @@ class ProcessManager: ObservableObject {
     @Published var totalLatencyMs: Double = 0
     @Published var startTime: Date?
 
-    private var server: ProxyServer?
+    private var server: MockServer?
 
     var averageLatency: Double {
         guard requestCount > 0 else { return 0 }
@@ -28,7 +28,7 @@ class ProcessManager: ObservableObject {
 
         if !silent { logInfo("Starting server…") }
         let port = availablePort(startingAt: port)
-        let server = ProxyServer(port: port, provider: provider, systemPrompt: systemPrompt)
+        let server = MockServer(port: port, provider: provider, systemPrompt: systemPrompt)
         server.onLog = { [weak self] entry in
             Task { @MainActor [weak self] in
                 self?.appendLog(entry)
