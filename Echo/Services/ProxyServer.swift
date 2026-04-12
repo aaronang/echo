@@ -143,128 +143,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
             return
         }
 
-        struct GenerateBody: Decodable {
-            let prompt: String
-            let session_id: String?
-        }
-
-        let bytes = Data(bodyBuffer.readableBytesView)
-        guard let body = try? JSONDecoder().decode(GenerateBody.self, from: bytes),
-              !body.prompt.isEmpty else {
-            writeError(context: context, status: .badRequest, message: "prompt is required")
-            return
-        }
-
-        // SSE response headers
-        var headers = HTTPHeaders()
-        headers.add(name: "Content-Type", value: "text/event-stream")
-        headers.add(name: "Cache-Control", value: "no-cache")
-        headers.add(name: "Connection", value: "keep-alive")
-        headers.add(name: "Access-Control-Allow-Origin", value: "*")
-        let responseHead = HTTPResponseHead(version: head.version, status: .ok, headers: headers)
-        context.writeAndFlush(wrapOutboundOut(.head(responseHead)), promise: nil)
-
-        var bodyDict: [String: Any] = ["prompt": body.prompt]
-        if let sid = body.session_id { bodyDict["session_id"] = sid }
-        let requestBodyJSON = (try? JSONSerialization.data(withJSONObject: bodyDict, options: .prettyPrinted))
-            .flatMap { String(data: $0, encoding: .utf8) }
-
-        let channel = context.channel
-        let startTime = requestStart ?? Date()
-        let onLog = self.onLog
-
-        onLog?(LogEntry(
-            timestamp: startTime,
-            method: "POST",
-            path: "/",
-            info: "",
-            statusCode: nil,
-            latency: nil,
-            isError: false,
-            rawLine: "→ \(body.prompt)"
-        ))
-
-        var responseText = ""
-        var thinkingText = ""
-
-        let process = ProviderProcess()
-        activeProcess?.kill()
-        activeProcess = process
-
-        process.start(
-            provider: provider,
-            prompt: body.prompt,
-            sessionID: body.session_id,
-            systemPrompt: systemPrompt,
-            onFrame: { [weak channel] frame in
-                switch frame {
-                case .text(let t): responseText += t
-                case .thinking(let t): thinkingText += t
-                default: break
-                }
-                guard let channel else { return }
-                let data = Self.sseString(for: frame)
-                channel.eventLoop.execute {
-                    var buf = channel.allocator.buffer(capacity: data.utf8.count)
-                    buf.writeString(data)
-                    channel.writeAndFlush(HTTPServerResponsePart.body(.byteBuffer(buf)), promise: nil)
-                }
-            },
-            onLog: { message in
-                onLog?(LogEntry(
-                    timestamp: Date(),
-                    method: "POST",
-                    path: "/",
-                    info: "",
-                    statusCode: nil,
-                    latency: nil,
-                    isError: message.hasPrefix("Error"),
-                    rawLine: message
-                ))
-            },
-            onComplete: { [weak channel] statusCode in
-                guard let channel else { return }
-                channel.eventLoop.execute {
-                    channel.writeAndFlush(HTTPServerResponsePart.end(nil), promise: nil)
-                    let ms = Int(Date().timeIntervalSince(startTime) * 1000)
-                    if !thinkingText.isEmpty {
-                        onLog?(LogEntry(
-                            timestamp: startTime,
-                            method: "POST",
-                            path: "/",
-                            info: "",
-                            statusCode: nil,
-                            latency: nil,
-                            isError: false,
-                            rawLine: "💭 \(thinkingText)"
-                        ))
-                    }
-                    if !responseText.isEmpty {
-                        onLog?(LogEntry(
-                            timestamp: startTime,
-                            method: "POST",
-                            path: "/",
-                            info: "",
-                            statusCode: nil,
-                            latency: nil,
-                            isError: false,
-                            rawLine: "← \(responseText)"
-                        ))
-                    }
-                    onLog?(LogEntry(
-                        timestamp: startTime,
-                        method: "POST",
-                        path: "/",
-                        info: "",
-                        statusCode: statusCode,
-                        latency: "\(ms)ms",
-                        isError: statusCode >= 400,
-                        rawLine: "← \(statusCode) (\(ms)ms)",
-                        requestBody: requestBodyJSON
-                    ))
-                }
-            }
-        )
+        writeError(context: context, status: .notFound, message: "Not found")
     }
 
     // MARK: - Anthropic Messages API
@@ -575,23 +454,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
         ))
     }
 
-    // MARK: - SSE Helpers
 
-    private static func sseString(for frame: SSEFrame) -> String {
-        switch frame {
-        case .sessionID(let sid):   return sseJSON(["session_id": sid])
-        case .thinking(let t):      return sseJSON(["thinking": t])
-        case .text(let t):          return sseJSON(["text": t])
-        case .error(let e):         return sseJSON(["error": e])
-        case .done:                 return "data: [DONE]\n\n"
-        }
-    }
-
-    private static func sseJSON(_ dict: [String: String]) -> String {
-        let json = (try? JSONSerialization.data(withJSONObject: dict))
-            .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
-        return "data: \(json)\n\n"
-    }
 
     // MARK: - Help
 

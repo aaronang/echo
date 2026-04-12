@@ -22,12 +22,12 @@ Anthropic Messages API-compatible endpoint. This is the recommended way to inter
 ```
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `model` | string | No | Model name (passed through but does not change which provider Echo uses) |
-| `max_tokens` | integer | No | Maximum tokens in the response |
-| `messages` | array | Yes | Array of `{"role": "user"|"assistant", "content": "..."}` objects |
-| `system` | string | No | System prompt override |
-| `stream` | boolean | No | `true` for streaming SSE, `false` for a single JSON response (default: `false`) |
+| --- | --- | --- | --- |
+| model | string | No | Model name (passed through but does not change which provider Echo uses) |
+| max_tokens | integer | No | Maximum tokens in the response |
+| messages | array | Yes | Array of `{"role": "user" |
+| system | string | No | System prompt override |
+| stream | boolean | No | true for streaming SSE, false for a single JSON response (default: false) |
 
 ### Streaming response (`stream: true`)
 
@@ -159,73 +159,6 @@ print(response.content)
 ```
 
 This also works with LangGraph agents, tool-calling chains, and any integration that uses `ChatAnthropic` under the hood.
-
----
-
-## Legacy API
-
-## POST /
-
-Send a prompt to the AI provider. Returns a Server-Sent Events (SSE) stream.
-
-> **Note:** This is the original Echo endpoint. For new integrations, prefer `POST /v1/messages` above.
-
-### Request headers
-
-- `Content-Type: application/json`
-
-### Request body (JSON)
-
-```json
-{
-  "prompt": "Your message here",
-  "session_id": "optional — omit to start a new session, include to resume"
-}
-```
-
-### Response (text/event-stream)
-
-Each event is a `data:` line containing JSON:
-
-- `{"session_id": "..."}` — session ID for this conversation; pass it back to resume
-- `{"thinking": "..."}` — incremental reasoning text (provider-dependent)
-- `{"text": "..."}` — incremental response text
-- `{"error": "..."}` — error message
-- `[DONE]` — stream complete
-
-### Error responses
-
-Non-streaming errors are returned as JSON with an appropriate HTTP status code:
-
-```json
-{ "error": "prompt is required" }
-```
-
-### Example
-
-```sh
-# Start a new conversation
-curl -N http://localhost:3000/ \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "Hello!"}'
-
-# Resume a conversation
-curl -N http://localhost:3000/ \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "What did I just say?", "session_id": "<session_id from previous response>"}'
-```
-
-Expected response:
-
-```
-data: {"session_id":"abc123"}
-data: {"thinking":"The user said hello, I should greet them back."}
-data: {"text":"Hello"}
-data: {"text":"! How can I help you today?"}
-data: [DONE]
-```
-
----
 
 ## System prompt
 
