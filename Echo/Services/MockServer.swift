@@ -235,7 +235,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                 prompt: prompt,
                 sessionID: incomingSessionID,
                 model: body.model,
-                systemPrompt: systemPrompt,
+                systemPrompt: body.system != nil ? systemPrompt + "\n\n" + body.system! : systemPrompt,
                 onFrame: { [weak channel] frame in
                     guard let channel else { return }
                     channel.eventLoop.execute {
@@ -349,7 +349,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                 prompt: prompt,
                 sessionID: incomingSessionID,
                 model: body.model,
-                systemPrompt: systemPrompt,
+                systemPrompt: body.system != nil ? systemPrompt + "\n\n" + body.system! : systemPrompt,
                 onFrame: { frame in
                     switch frame {
                     case .text(let t): responseText += t
