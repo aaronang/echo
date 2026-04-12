@@ -55,7 +55,12 @@ data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":
 
 event: message_stop
 data: {"type":"message_stop"}
+
+event: session
+data: {"type":"session","session_id":"<id>"}
 ```
+
+If a session ID is available, a custom `event: session` event is emitted after `message_stop` (see [Sessions](#sessions)).
 
 When the provider returns thinking/reasoning, a thinking content block (index 0) is emitted before the text block:
 
@@ -174,8 +179,8 @@ Echo supports multi-turn conversations using session IDs. The `X-Session-ID` hea
 
 | Mode | Location |
 | --- | --- |
-| Streaming (`stream: true`) | Custom SSE event: `event: session` with `data: {"type":"session","session_id":"<id>"}` |
-| Non-streaming (`stream: false`) | `X-Session-ID` response header **and** `session_id` field in the JSON body |
+| Streaming (`stream: true`) | Custom SSE event `event: session` emitted **after** `message_stop`: `data: {"type":"session","session_id":"<id>"}` |
+| Non-streaming (`stream: false`) | `X-Session-ID` response header |
 
 ### Example
 

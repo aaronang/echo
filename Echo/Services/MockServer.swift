@@ -228,6 +228,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
             var textBlockIndex = 0
             var responseText = ""
             var thinkingText = ""
+            var capturedSessionID: String?
 
             process.start(
                 provider: provider,
@@ -292,10 +293,14 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                             // message_stop
                             Self.writeSSEEvent(channel: channel, event: "message_stop",
                                 data: "{\"type\":\"message_stop\"}")
+                            // Emit session ID after message_stop
+                            if let sid = capturedSessionID {
+                                Self.writeSSEEvent(channel: channel, event: "session",
+                                    data: "{\"type\":\"session\",\"session_id\":\"\(Self.jsonEscape(sid))\"}")
+                            }
 
                         case .sessionID(let sid):
-                            Self.writeSSEEvent(channel: channel, event: "session",
-                                data: "{\"type\":\"session\",\"session_id\":\"\(Self.jsonEscape(sid))\"}")
+                            capturedSessionID = sid
                         }
                     }
                 },
@@ -384,10 +389,6 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                             "stop_sequence": NSNull(),
                             "usage": ["input_tokens": 0, "output_tokens": 0]
                         ]
-                        if let sid = capturedSessionID {
-                            responseDict["session_id"] = sid
-                        }
-
                         let jsonData = (try? JSONSerialization.data(withJSONObject: responseDict, options: []))
                             ?? "{}".data(using: .utf8)!
                         let jsonString = String(data: jsonData, encoding: .utf8) ?? "{}"
