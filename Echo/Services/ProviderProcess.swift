@@ -21,18 +21,20 @@ final class ProviderProcess {
         onLog: (@Sendable (String) -> Void)? = nil,
         onComplete: @escaping @Sendable (Int) -> Void
     ) {
+        let combinedPrompt = systemPrompt.isEmpty ? prompt : systemPrompt + "\n\n" + prompt
+
         switch provider {
         case .claude:
-            startClaude(prompt: prompt, sessionID: sessionID, model: model,
-                        systemPrompt: systemPrompt, onFrame: onFrame, onLog: onLog, onComplete: onComplete)
+            startClaude(prompt: combinedPrompt, sessionID: sessionID, model: model,
+                        onFrame: onFrame, onLog: onLog, onComplete: onComplete)
         case .auggie:
             startBatch(command: "auggie",
-                       args: buildAuggieArgs(prompt: prompt, sessionID: sessionID, model: model),
-                       systemPrompt: systemPrompt, onFrame: onFrame, onLog: onLog, onComplete: onComplete)
+                       args: buildAuggieArgs(prompt: combinedPrompt, sessionID: sessionID, model: model),
+                       onFrame: onFrame, onLog: onLog, onComplete: onComplete)
         case .droid:
             startBatch(command: "droid",
-                       args: buildDroidArgs(prompt: prompt, sessionID: sessionID, model: model),
-                       systemPrompt: systemPrompt, onFrame: onFrame, onLog: onLog, onComplete: onComplete)
+                       args: buildDroidArgs(prompt: combinedPrompt, sessionID: sessionID, model: model),
+                       onFrame: onFrame, onLog: onLog, onComplete: onComplete)
         }
     }
 
@@ -46,7 +48,6 @@ final class ProviderProcess {
         prompt: String,
         sessionID: String?,
         model: String?,
-        systemPrompt: String,
         onFrame: @escaping @Sendable (SSEFrame) -> Void,
         onLog: (@Sendable (String) -> Void)?,
         onComplete: @escaping @Sendable (Int) -> Void
@@ -58,7 +59,7 @@ final class ProviderProcess {
         if let m = model { args += ["--model", m] }
         if let sid = sessionID { args += ["--resume", sid] }
 
-        let p = makeProcess(command: "claude", args: args, systemPrompt: systemPrompt)
+        let p = makeProcess(command: "claude", args: args)
         process = p
 
         let stdin = Pipe()
@@ -172,12 +173,11 @@ final class ProviderProcess {
     private func startBatch(
         command: String,
         args: [String],
-        systemPrompt: String,
         onFrame: @escaping @Sendable (SSEFrame) -> Void,
         onLog: (@Sendable (String) -> Void)?,
         onComplete: @escaping @Sendable (Int) -> Void
     ) {
-        let p = makeProcess(command: command, args: args, systemPrompt: systemPrompt)
+        let p = makeProcess(command: command, args: args)
         process = p
 
         let stdout = Pipe()
@@ -282,15 +282,12 @@ final class ProviderProcess {
 
     // MARK: - Helpers
 
-    private func makeProcess(command: String, args: [String], systemPrompt: String) -> Process {
+    private func makeProcess(command: String, args: [String]) -> Process {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: resolveCommand(command))
         p.arguments = args
         var env = ProcessInfo.processInfo.environment
         env["PATH"] = Self.resolvedPATH
-        if !systemPrompt.isEmpty {
-            env["SYSTEM_PROMPT"] = systemPrompt
-        }
         p.environment = env
         return p
     }
