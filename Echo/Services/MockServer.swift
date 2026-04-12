@@ -185,6 +185,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
         let isStreaming = body.stream ?? false
         let msgID = "msg_\(UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: "").prefix(24))"
         let modelName = body.model ?? "claude-sonnet-4-20250514"
+        let incomingSessionID = head.headers["X-Session-ID"].first
 
         let startTime = requestStart ?? Date()
         let onLog = self.onLog
@@ -231,7 +232,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
             process.start(
                 provider: provider,
                 prompt: prompt,
-                sessionID: nil,
+                sessionID: incomingSessionID,
                 model: body.model,
                 systemPrompt: systemPrompt,
                 onFrame: { [weak channel] frame in
@@ -292,8 +293,9 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                             Self.writeSSEEvent(channel: channel, event: "message_stop",
                                 data: "{\"type\":\"message_stop\"}")
 
-                        case .sessionID:
-                            break
+                        case .sessionID(let sid):
+                            Self.writeSSEEvent(channel: channel, event: "session",
+                                data: "{\"type\":\"session\",\"session_id\":\"\(Self.jsonEscape(sid))\"}")
                         }
                     }
                 },
@@ -335,17 +337,19 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
             // Non-streaming: collect all frames, then return complete JSON
             var responseText = ""
             var thinkingText = ""
+            var capturedSessionID: String?
 
             process.start(
                 provider: provider,
                 prompt: prompt,
-                sessionID: nil,
+                sessionID: incomingSessionID,
                 model: body.model,
                 systemPrompt: systemPrompt,
                 onFrame: { frame in
                     switch frame {
                     case .text(let t): responseText += t
                     case .thinking(let t): thinkingText += t
+                    case .sessionID(let sid): capturedSessionID = sid
                     default: break
                     }
                 },
@@ -370,7 +374,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                         }
                         contentArray.append(["type": "text", "text": responseText])
 
-                        let responseDict: [String: Any] = [
+                        var responseDict: [String: Any] = [
                             "id": msgID,
                             "type": "message",
                             "role": "assistant",
@@ -380,6 +384,9 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                             "stop_sequence": NSNull(),
                             "usage": ["input_tokens": 0, "output_tokens": 0]
                         ]
+                        if let sid = capturedSessionID {
+                            responseDict["session_id"] = sid
+                        }
 
                         let jsonData = (try? JSONSerialization.data(withJSONObject: responseDict, options: []))
                             ?? "{}".data(using: .utf8)!
@@ -388,6 +395,9 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                         var headers = HTTPHeaders()
                         headers.add(name: "Content-Type", value: "application/json")
                         headers.add(name: "Access-Control-Allow-Origin", value: "*")
+                        if let sid = capturedSessionID {
+                            headers.add(name: "X-Session-ID", value: sid)
+                        }
                         headers.add(name: "Content-Length", value: "\(jsonString.utf8.count)")
                         let respHead = HTTPResponseHead(version: head.version, status: .ok, headers: headers)
                         channel.write(HTTPServerResponsePart.head(respHead), promise: nil)
@@ -556,7 +566,8 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
         var headers = HTTPHeaders()
         headers.add(name: "Access-Control-Allow-Origin", value: "*")
         headers.add(name: "Access-Control-Allow-Methods", value: "GET, POST, OPTIONS")
-        headers.add(name: "Access-Control-Allow-Headers", value: "Content-Type")
+        headers.add(name: "Access-Control-Allow-Headers", value: "Content-Type, X-Session-ID")
+        headers.add(name: "Access-Control-Expose-Headers", value: "X-Session-ID")
         let head = HTTPResponseHead(version: .http1_1, status: .ok, headers: headers)
         context.write(wrapOutboundOut(.head(head)), promise: nil)
         context.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)

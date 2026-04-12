@@ -7,6 +7,7 @@ Anthropic Messages API-compatible endpoint. This is the recommended way to inter
 ### Request headers
 
 - `Content-Type: application/json`
+- `X-Session-ID: <id>` *(optional)* — resume a previous session (see [Sessions](#sessions))
 
 ### Request body (JSON)
 
@@ -159,6 +160,60 @@ print(response.content)
 ```
 
 This also works with LangGraph agents, tool-calling chains, and any integration that uses `ChatAnthropic` under the hood.
+
+## Sessions
+
+Echo supports multi-turn conversations using session IDs. The `X-Session-ID` header lets you resume a previous session so the provider retains conversation history.
+
+### Flow
+
+1. **First request** — send a message without `X-Session-ID`. The response will include a session ID.
+2. **Subsequent requests** — include the session ID from the previous response in the `X-Session-ID` request header. Only the last user message is sent as the prompt; the provider recalls prior turns automatically.
+
+### Where the session ID appears
+
+| Mode | Location |
+| --- | --- |
+| Streaming (`stream: true`) | Custom SSE event: `event: session` with `data: {"type":"session","session_id":"<id>"}` |
+| Non-streaming (`stream: false`) | `X-Session-ID` response header **and** `session_id` field in the JSON body |
+
+### Example
+
+#### Turn 1 — new session
+
+```sh
+curl -N http://localhost:3000/v1/messages \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-sonnet-4-20250514",
+    "max_tokens": 1024,
+    "stream": true,
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+```
+
+The streaming response will include an SSE event like:
+
+```
+event: session
+data: {"type":"session","session_id":"abc-123-def"}
+```
+
+#### Turn 2 — resume session
+
+```sh
+curl -N http://localhost:3000/v1/messages \
+  -H "Content-Type: application/json" \
+  -H "X-Session-ID: abc-123-def" \
+  -d '{
+    "model": "claude-sonnet-4-20250514",
+    "max_tokens": 1024,
+    "stream": true,
+    "messages": [{"role": "user", "content": "What did I just say?"}]
+  }'
+```
+
+The provider will have context from the first turn and can respond accordingly.
 
 ## System prompt
 
