@@ -191,6 +191,12 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
         let onLog = self.onLog
         let channel = context.channel
 
+        let rawLine: String
+        if let clientSystem = body.system {
+            rawLine = "→ \(clientSystem)\n\n\(prompt)"
+        } else {
+            rawLine = "→ \(prompt)"
+        }
         onLog?(LogEntry(
             timestamp: startTime,
             method: "POST",
@@ -199,7 +205,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
             statusCode: nil,
             latency: nil,
             isError: false,
-            rawLine: "→ \(prompt)"
+            rawLine: rawLine
         ))
 
         let process = ProviderProcess()
@@ -235,7 +241,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                 prompt: prompt,
                 sessionID: incomingSessionID,
                 model: body.model,
-                systemPrompt: body.system != nil ? systemPrompt + "\n\n" + body.system! : systemPrompt,
+                systemPrompt: body.system ?? "",
                 onFrame: { [weak channel] frame in
                     guard let channel else { return }
                     channel.eventLoop.execute {
@@ -349,7 +355,7 @@ private final class HTTPRequestHandler: ChannelInboundHandler, @unchecked Sendab
                 prompt: prompt,
                 sessionID: incomingSessionID,
                 model: body.model,
-                systemPrompt: body.system != nil ? systemPrompt + "\n\n" + body.system! : systemPrompt,
+                systemPrompt: body.system ?? "",
                 onFrame: { frame in
                     switch frame {
                     case .text(let t): responseText += t
